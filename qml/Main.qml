@@ -152,8 +152,9 @@ ApplicationWindow {
     component ToolBtn: Rectangle {
         property string label
         property bool active: false
+        property int fontSize: 12
         signal activated()
-        width: btnText.width + 18
+        width: Math.max(btnText.width + 18, height)
         height: 26
         radius: 3
         color: active ? "#22303e"
@@ -166,7 +167,7 @@ ApplicationWindow {
             anchors.centerIn: parent
             text: parent.label
             color: "#d8d8dc"
-            font.pixelSize: 12
+            font.pixelSize: parent.fontSize
         }
         HoverHandler { id: btnHover }
         TapHandler { onTapped: parent.activated() }
@@ -194,7 +195,7 @@ ApplicationWindow {
 
                 Item {
                     width: parent.width
-                    height: 26
+                    height: 30
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -206,15 +207,19 @@ ApplicationWindow {
                     Row {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.right: parent.right
-                        spacing: 2
+                        spacing: 4
 
                         ToolBtn {
                             label: "⚙"
+                            fontSize: 17
+                            height: 30
                             active: window.settingsOpen
                             onActivated: window.settingsOpen = !window.settingsOpen
                         }
                         ToolBtn {
                             label: "«"
+                            fontSize: 17
+                            height: 30
                             onActivated: window.sidebarCollapsed = true
                         }
                     }
@@ -450,7 +455,7 @@ ApplicationWindow {
 
     // Left-edge hover strip: brings the collapsed sidebar back.
     MouseArea {
-        width: 16
+        width: 24
         height: parent.height
         hoverEnabled: true
         visible: window.sidebarCollapsed
@@ -458,8 +463,8 @@ ApplicationWindow {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            width: 18
-            height: 64
+            width: 26
+            height: 88
             radius: 4
             color: "#1a1a1ee6"
             border.width: 1
@@ -470,7 +475,7 @@ ApplicationWindow {
                 anchors.centerIn: parent
                 text: "»"
                 color: "#d8d8dc"
-                font.pixelSize: 14
+                font.pixelSize: 20
             }
         }
     }

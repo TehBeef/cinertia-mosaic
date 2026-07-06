@@ -74,9 +74,10 @@ Item {
         component TileBtn: Rectangle {
             property string label
             property bool active: false
+            property int fontSize: 12
             signal activated()
-            width: btnText.width + 10
-            height: 18
+            width: Math.max(btnText.width + 12, 22)
+            height: 22
             radius: 2
             color: active ? "#22303e" : btnHover.hovered ? "#2a2a30" : "transparent"
             border.width: active ? 1 : 0
@@ -86,7 +87,7 @@ Item {
                 anchors.centerIn: parent
                 text: parent.label
                 color: "#d8d8dc"
-                font.pixelSize: 11
+                font.pixelSize: parent.fontSize
             }
             HoverHandler { id: btnHover }
             TapHandler { onTapped: parent.activated() }
@@ -99,7 +100,7 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.margins: 1
-            height: 24
+            height: 28
             color: "#1a1a1ee6"
             opacity: (tileHover.hovered || moveArea.pressed) ? 1 : 0
             visible: opacity > 0
@@ -129,8 +130,8 @@ Item {
                 anchors.rightMargin: 4
                 spacing: 2
 
-                TileBtn { label: "⟲"; onActivated: video.rotateBy(-90) }
-                TileBtn { label: "⟳"; onActivated: video.rotateBy(90) }
+                TileBtn { label: "⟲"; fontSize: 15; onActivated: video.rotateBy(-90) }
+                TileBtn { label: "⟳"; fontSize: 15; onActivated: video.rotateBy(90) }
                 TileBtn {
                     label: "Crop"
                     active: tile.cropMode
@@ -140,7 +141,7 @@ Item {
                     label: "Fit"
                     onActivated: { tile.cropMode = false; video.resetView() }
                 }
-                TileBtn { label: "✕"; onActivated: tile.closeRequested() }
+                TileBtn { label: "✕"; fontSize: 14; onActivated: tile.closeRequested() }
             }
         }
 
