@@ -202,10 +202,28 @@ ApplicationWindow {
         saveProfilesFile()
     }
 
+    // The active profile follows the user: any change to the canvas is
+    // folded back into it automatically (no manual Save needed). Called
+    // by the autosave timer, on close, and right before switching away.
+    function syncActiveProfile() {
+        if (currentProfile === "")
+            return
+        const idx = profiles.findIndex(x => x.name === currentProfile)
+        if (idx < 0)
+            return
+        const tiles = captureTiles()
+        if (JSON.stringify(profiles[idx].tiles) === JSON.stringify(tiles))
+            return
+        profiles[idx].tiles = tiles
+        profiles = profiles.slice()
+        saveProfilesFile()
+    }
+
     function applyProfile(name) {
         const p = profiles.find(x => x.name === name)
         if (!p)
             return
+        syncActiveProfile() // don't lose changes made since the last tick
         applyTiles(p.tiles)
         currentProfile = name
     }
@@ -219,6 +237,7 @@ ApplicationWindow {
 
     // ------------------------------------------------- session restore
     function saveSession() {
+        syncActiveProfile()
         storage.save("session.json", JSON.stringify({
             version: 1,
             snapOn: snapOn,
