@@ -34,6 +34,7 @@ qt_add_qml_module(Mosaic
     VERSION 1.0
     QML_FILES
         qml/Main.qml
+        qml/Tile.qml
     SOURCES
         src/ndi/NdiFinder.h
         src/ndi/NdiFinder.cpp

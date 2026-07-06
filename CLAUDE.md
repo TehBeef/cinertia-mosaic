@@ -55,7 +55,7 @@ A professional NDI multiviewer for the AV/broadcast industry. It receives multip
 3. **Transforms** — zoom, pan, rotate, crop, reset on that single source. GPU-based. Must feel instant.
 4. **Multi-tile canvas** — multiple sources, movable/resizable tiles, snap-to-grid, preset layouts.
 5. **Display modes** — fullscreen (monitor picker), windowless/frameless, always-on-top, hover-reveal controls.
-   - Max (2026-07-06): in fullscreen and windowless modes the source sidebar must collapse or go away; put the settings menu/icon in the sidebar. The settings menu should include a toggle for Ctrl+scroll wheel rotation (shipped off by default — trackpad pinch arrives as Ctrl+scroll on Windows and rotated the view by accident).
+   - Max (2026-07-06): in fullscreen and windowless modes the source sidebar must collapse or go away; put the settings menu/icon in the sidebar. Settings menu gets a toggle for scroll-wheel rotation (bound to Alt+scroll, on by default). Ctrl is reserved for snapping on the canvas — never bind Ctrl+scroll to rotation because trackpad pinch arrives as Ctrl+scroll on Windows.
 6. **Polish** — layout save/load, per-tile options, proxy stream toggle, source name overlays, About dialog with NDI compliance items.
 7. **Installer** — Inno Setup .exe installer, version numbering, app icon.
 8. **(Future) macOS port** — do not build now, but never introduce Windows-only dependencies without flagging it to me.

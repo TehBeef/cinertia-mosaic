@@ -12,11 +12,14 @@ approval from the NDI team, so everything internal uses this codename for now.
 Easy to rename later.
 
 ## Current status
-**Milestone 3 — GPU view transforms.** Zoom (scroll), pan (drag), rotate
-(Ctrl+scroll or 90° buttons), crop (drag a box), and reset — all done on
-the GPU by moving a transform matrix / texture window, never by
-re-decoding video. Awaiting Max's feel test.
-(Milestones 1–2 are complete and signed off.)
+**Milestone 4 — multi-tile canvas.** Multiple sources at once, each in its
+own tile. Click sources in the sidebar to add/remove them. Tiles move by
+dragging their hover header, resize from the corners, snap to a grid when
+Ctrl is held (or the Snap toggle is on), and preset layouts (2×2, 3×3,
+1+side) arrange everything in one click. Each tile keeps its own
+zoom/pan/rotate/crop from Milestone 3. Awaiting Max's test.
+(Milestones 1–3 are complete and signed off. Rotation is Alt+scroll —
+Ctrl is reserved for snapping, and trackpad pinch = zoom.)
 
 ## Files in the project
 
@@ -28,7 +31,8 @@ re-decoding video. Awaiting Max's feel test.
 | `src/main.cpp` | The C++ entry point. Starts the NDI library and loads the user interface. |
 | `src/ndi/NdiFinder.h/.cpp` | Watches the network for NDI sources (checks once a second) and feeds the sidebar list. |
 | `src/ndi/NdiVideoItem.h/.cpp` | The video tile. Each one runs its own background thread that receives one NDI stream (using NDI's frame-sync for smooth timing) and draws the frames on screen, letterboxed to the correct aspect ratio. Also owns the view math: zoom/pan/rotate are a transform matrix on the video rectangle, crop is a "window" into the video texture — all GPU work. |
-| `qml/Main.qml` | The user interface: source sidebar (with the required ndi.video link), video viewer, hover toolbar (rotate/crop/reset), crop-selection overlay, and status strip showing resolution/frame rate. |
+| `qml/Main.qml` | The main window: source sidebar (click to add/remove tiles, required ndi.video link), the tile canvas, layout presets + snap toggle, and the status strip. |
+| `qml/Tile.qml` | One tile on the canvas: hover header (drag to move, rotate/crop/fit/close buttons), corner resize grips, snap-to-grid logic, crop overlay. The live video inside is a `VideoView` from NdiVideoItem. |
 | `.gitignore` | Tells git to ignore build output and editor junk. |
 | `build/` | (created during builds) Compiled output. Never edited by hand, safe to delete. |
 

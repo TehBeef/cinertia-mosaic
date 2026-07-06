@@ -51,8 +51,8 @@ class NdiVideoItem : public QQuickItem
     Q_PROPERTY(qreal zoomLevel READ zoomLevel NOTIFY viewChanged)
     Q_PROPERTY(qreal viewRotation READ viewRotation NOTIFY viewChanged)
     Q_PROPERTY(bool cropped READ cropped NOTIFY viewChanged)
-    // Off by default: Windows trackpads report pinch as Ctrl+scroll, which
-    // made rotation trigger accidentally. Future settings menu can enable it.
+    // Alt+scroll rotation. On by default; the future settings menu gets a
+    // toggle. Ctrl is reserved for canvas snapping per Max's request.
     Q_PROPERTY(bool wheelRotateEnabled READ wheelRotateEnabled WRITE setWheelRotateEnabled NOTIFY wheelRotateEnabledChanged)
 
 public:
@@ -79,6 +79,7 @@ signals:
     void statusChanged();
     void viewChanged();
     void wheelRotateEnabledChanged();
+    void interacted(); // any click/scroll on the video — used to select tiles
 
 protected:
     QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
@@ -111,5 +112,5 @@ private:
     QRectF m_crop{0, 0, 1, 1}; // normalized UV window into the frame
     QPointF m_lastMousePos;
     bool m_panning = false;
-    bool m_wheelRotateEnabled = false;
+    bool m_wheelRotateEnabled = true;
 };

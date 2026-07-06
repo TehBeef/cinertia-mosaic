@@ -12,6 +12,77 @@ ApplicationWindow {
 
     NdiFinder { id: finder }
 
+    // Which sources are on the canvas. Tile positions live on the tile
+    // items themselves while the app runs (saved layouts come later).
+    ListModel { id: tileModel }
+    property int topZ: 0
+    property bool snapOn: false
+
+    function sourceOnCanvas(name) {
+        for (let i = 0; i < tileModel.count; i++)
+            if (tileModel.get(i).name === name)
+                return true
+        return false
+    }
+
+    function toggleSource(name) {
+        for (let i = 0; i < tileModel.count; i++) {
+            if (tileModel.get(i).name === name) {
+                tileModel.remove(i)
+                return
+            }
+        }
+        tileModel.append({ name: name })
+    }
+
+    // Preset layouts arrange the tiles that are already on the canvas.
+    function applyGrid(cols) {
+        const n = tileRepeater.count
+        if (n === 0)
+            return
+        const rows = Math.ceil(n / cols)
+        const gut = 8
+        const cw = (canvas.width - gut * (cols + 1)) / cols
+        const ch = (canvas.height - gut * (rows + 1)) / rows
+        for (let i = 0; i < n; i++) {
+            const it = tileRepeater.itemAt(i)
+            const c = i % cols
+            const r = Math.floor(i / cols)
+            it.x = gut + c * (cw + gut)
+            it.y = gut + r * (ch + gut)
+            it.width = cw
+            it.height = ch
+        }
+    }
+
+    function applyOnePlusSide() {
+        const n = tileRepeater.count
+        if (n === 0)
+            return
+        if (n === 1) {
+            applyGrid(1)
+            return
+        }
+        const gut = 8
+        const bigW = (canvas.width - gut * 3) * 2 / 3
+        const big = tileRepeater.itemAt(0)
+        big.x = gut
+        big.y = gut
+        big.width = bigW
+        big.height = canvas.height - 2 * gut
+        const colX = gut * 2 + bigW
+        const colW = canvas.width - colX - gut
+        const side = n - 1
+        const ch = (canvas.height - gut * (side + 1)) / side
+        for (let i = 1; i < n; i++) {
+            const it = tileRepeater.itemAt(i)
+            it.x = colX
+            it.y = gut + (i - 1) * (ch + gut)
+            it.width = colW
+            it.height = ch
+        }
+    }
+
     Row {
         anchors.fill: parent
 
@@ -36,7 +107,7 @@ ApplicationWindow {
                 Text {
                     text: finder.sources.length === 0
                           ? "Searching the network…"
-                          : finder.sources.length + " found"
+                          : finder.sources.length + " found — click to add/remove"
                     color: "#8a8a90"
                     font.pixelSize: 11
                 }
@@ -51,29 +122,43 @@ ApplicationWindow {
 
                     delegate: Rectangle {
                         required property string modelData
+                        // Depends on tileModel.count so it re-evaluates on
+                        // every add/remove.
+                        property bool onCanvas: {
+                            tileModel.count
+                            return window.sourceOnCanvas(modelData)
+                        }
                         width: sourceList.width
                         height: 34
                         radius: 3
-                        color: viewer.sourceName === modelData ? "#22303e"
+                        color: onCanvas ? "#22303e"
                              : hover.hovered ? "#1c1c20" : "transparent"
                         border.width: 1
-                        border.color: viewer.sourceName === modelData
-                                      ? "#3d7eff" : "#26262b"
+                        border.color: onCanvas ? "#3d7eff" : "#26262b"
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
-                            anchors.right: parent.right
+                            anchors.right: mark.left
                             anchors.margins: 10
                             text: parent.modelData
                             color: "#d8d8dc"
                             font.pixelSize: 12
                             elide: Text.ElideRight
                         }
+                        Text {
+                            id: mark
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.right: parent.right
+                            anchors.rightMargin: 10
+                            text: parent.onCanvas ? "●" : ""
+                            color: "#3d7eff"
+                            font.pixelSize: 9
+                        }
 
                         HoverHandler { id: hover }
                         TapHandler {
-                            onTapped: viewer.sourceName = parent.modelData
+                            onTapped: window.toggleSource(parent.modelData)
                         }
                     }
                 }
@@ -102,33 +187,62 @@ ApplicationWindow {
             }
         }
 
-        // ------------------------------------------------- viewer area
+        // -------------------------------------------------- tile canvas
         Rectangle {
-            id: viewerArea
+            id: canvas
             width: parent.width - sidebar.width
             height: parent.height
             color: "#0e0e10"
-            clip: true // zoomed/rotated video must not spill outside
+            clip: true
 
-            property bool cropMode: false
+            property var selectedTile: null
 
-            VideoView {
-                id: viewer
-                anchors.fill: parent
-                anchors.margins: 12
+            HoverHandler { id: canvasHover }
+
+            // Click empty canvas to deselect.
+            TapHandler {
+                onTapped: canvas.selectedTile = null
             }
-
-            HoverHandler { id: areaHover }
 
             Text {
                 anchors.centerIn: parent
-                visible: viewer.sourceName === ""
-                text: "Select an NDI® source on the left"
+                visible: tileModel.count === 0
+                text: finder.sources.length === 0
+                      ? "Waiting for NDI® sources to appear on the network…"
+                      : "Click sources on the left to add them to the canvas"
                 color: "#5a5a60"
                 font.pixelSize: 16
             }
 
-            // Small reusable toolbar button.
+            Repeater {
+                id: tileRepeater
+                model: tileModel
+
+                delegate: Tile {
+                    required property int index
+                    required property string name
+                    sourceName: name
+                    snapEnabled: window.snapOn
+                    gridSize: 16
+                    selected: canvas.selectedTile === this
+                    Component.onCompleted: {
+                        x = 24 + (index % 5) * 40
+                        y = 24 + (index % 5) * 40
+                        z = ++window.topZ
+                        canvas.selectedTile = this
+                    }
+                    onSelectRequested: {
+                        canvas.selectedTile = this
+                        z = ++window.topZ
+                    }
+                    onCloseRequested: {
+                        if (canvas.selectedTile === this)
+                            canvas.selectedTile = null
+                        tileModel.remove(index)
+                    }
+                }
+            }
+
             component ToolBtn: Rectangle {
                 property string label
                 property bool active: false
@@ -152,7 +266,7 @@ ApplicationWindow {
                 TapHandler { onTapped: parent.activated() }
             }
 
-            // Hover-reveal toolbar (minimal chrome: gets out of the way).
+            // Hover-reveal canvas toolbar: layout presets + snap toggle.
             Rectangle {
                 anchors.top: parent.top
                 anchors.right: parent.right
@@ -163,8 +277,8 @@ ApplicationWindow {
                 color: "#1a1a1ee6"
                 border.width: 1
                 border.color: "#2a2a2e"
-                visible: viewer.sourceName !== ""
-                opacity: (areaHover.hovered || viewerArea.cropMode) ? 1 : 0
+                visible: tileModel.count > 0
+                opacity: canvasHover.hovered ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: 150 } }
 
                 Row {
@@ -172,116 +286,49 @@ ApplicationWindow {
                     anchors.centerIn: parent
                     spacing: 4
 
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Math.round(viewer.zoomLevel * 100) + "%"
-                        color: "#8a8a90"
-                        font.pixelSize: 11
-                        rightPadding: 6
-                    }
-                    ToolBtn { label: "⟲ 90";  onActivated: viewer.rotateBy(-90) }
-                    ToolBtn { label: "90 ⟳";  onActivated: viewer.rotateBy(90) }
+                    ToolBtn { label: "2×2"; onActivated: window.applyGrid(2) }
+                    ToolBtn { label: "3×3"; onActivated: window.applyGrid(3) }
+                    ToolBtn { label: "1+side"; onActivated: window.applyOnePlusSide() }
                     ToolBtn {
-                        label: "Crop"
-                        active: viewerArea.cropMode
-                        onActivated: viewerArea.cropMode = !viewerArea.cropMode
+                        label: "Snap"
+                        active: window.snapOn
+                        onActivated: window.snapOn = !window.snapOn
                     }
-                    ToolBtn {
-                        label: "Clear crop"
-                        visible: viewer.cropped
-                        onActivated: viewer.clearCrop()
-                    }
-                    ToolBtn { label: "Reset"; onActivated: { viewerArea.cropMode = false; viewer.resetView() } }
                 }
             }
 
-            // Crop mode: drag a rectangle over the video to set the crop.
-            MouseArea {
-                id: cropArea
-                anchors.fill: viewer
-                visible: viewerArea.cropMode
-                cursorShape: Qt.CrossCursor
-                property point start: Qt.point(0, 0)
-                property rect sel: Qt.rect(0, 0, 0, 0)
-
-                onPressed: mouse => {
-                    start = Qt.point(mouse.x, mouse.y)
-                    sel = Qt.rect(mouse.x, mouse.y, 0, 0)
-                }
-                onPositionChanged: mouse => {
-                    if (!pressed)
-                        return
-                    sel = Qt.rect(Math.min(start.x, mouse.x),
-                                  Math.min(start.y, mouse.y),
-                                  Math.abs(mouse.x - start.x),
-                                  Math.abs(mouse.y - start.y))
-                }
-                onReleased: {
-                    if (sel.width > 10 && sel.height > 10)
-                        viewer.applyCropFromItemRect(Qt.rect(sel.x, sel.y, sel.width, sel.height))
-                    sel = Qt.rect(0, 0, 0, 0)
-                    viewerArea.cropMode = false
-                }
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: "#00000055"
-                }
-                Rectangle {
-                    x: cropArea.sel.x
-                    y: cropArea.sel.y
-                    width: cropArea.sel.width
-                    height: cropArea.sel.height
-                    color: "#3d7eff18"
-                    border.width: 1
-                    border.color: "#3d7eff"
-                }
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    anchors.topMargin: 60
-                    text: "Drag to select the crop area — Esc to cancel"
-                    color: "#d8d8dc"
-                    font.pixelSize: 13
-                }
-            }
-
-            Shortcut {
-                sequence: "Escape"
-                enabled: viewerArea.cropMode
-                onActivated: viewerArea.cropMode = false
-            }
-
-            // Status strip: source name, interaction hints, stream info.
+            // Status strip: selected tile info + interaction hints.
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: 26
                 color: "#141417cc"
-                visible: viewer.sourceName !== ""
+                visible: tileModel.count > 0
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.leftMargin: 12
-                    text: viewer.sourceName
+                    text: canvas.selectedTile
+                          ? canvas.selectedTile.sourceName
+                          : tileModel.count + " tile" + (tileModel.count === 1 ? "" : "s")
                     color: "#d8d8dc"
                     font.pixelSize: 11
                     elide: Text.ElideRight
                 }
                 Text {
                     anchors.centerIn: parent
-                    text: "Scroll or pinch = zoom · Drag = pan · Double-click = reset"
+                    text: "Scroll = zoom · Drag = pan · Alt+scroll = rotate · Header = move tile · Corners = resize · Ctrl = snap"
                     color: "#5a5a60"
                     font.pixelSize: 10
-                    visible: areaHover.hovered
+                    visible: canvasHover.hovered
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
                     anchors.rightMargin: 12
-                    text: viewer.status
+                    text: canvas.selectedTile ? canvas.selectedTile.status : ""
                     color: "#8a8a90"
                     font.pixelSize: 11
                 }
