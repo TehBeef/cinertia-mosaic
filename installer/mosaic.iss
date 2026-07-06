@@ -1,8 +1,8 @@
-; Inno Setup script for Mosaic.
+﻿; Inno Setup script for Mosaic.
 ; Build with: ISCC.exe mosaic.iss  (after staging the deploy\ folder)
 
 #define MyAppName "Mosaic"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Cinertia Systems"
 #define MyAppExeName "Mosaic.exe"
 
@@ -39,3 +39,4 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
+

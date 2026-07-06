@@ -1497,7 +1497,7 @@ ApplicationWindow {
                     font.weight: Font.DemiBold
                 }
                 Text {
-                    text: "Version 0.1.0 — Cinertia Systems"
+                    text: "Version 0.2.0 — Cinertia Systems"
                     color: "#8a8a90"
                     font.pixelSize: 12
                 }

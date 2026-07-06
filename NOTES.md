@@ -27,8 +27,12 @@ proxy stream for small tiles). All three stick with profiles and the
 session. The active profile also auto-saves every change now — the Save
 button is only for creating new profiles. About dialog (gear → About
 Mosaic…) carries the NDI trademark notice and ndi.video link.
-**Milestone 7 (awaiting Max's test):** the installer.
-`dist\Mosaic-Setup-0.1.0.exe` — a single setup exe built with Inno Setup.
+**Current release: 0.2.0** — `dist\Mosaic-Setup-0.2.0.exe` contains
+everything built so far: all v1 milestones plus profiles with autosave,
+duplicate sources (opt-in), tile renaming, per-tile options (name /
+meter / low bandwidth / low latency), hotkeys, never-sleep, and the
+Companion TCP remote control with feedback protocol.
+The installer is a single setup exe built with Inno Setup.
 Installs to Program Files with the Qt runtime and the NDI DLL bundled in
 the app folder (per the NDI license), Start Menu entry, optional desktop
 icon, proper app icon and version info, no debug console window.

@@ -1,9 +1,9 @@
-// Windows resources: application icon and version info.
+﻿// Windows resources: application icon and version info.
 IDI_ICON1 ICON "mosaic.ico"
 
 1 VERSIONINFO
-FILEVERSION     0,1,0,0
-PRODUCTVERSION  0,1,0,0
+FILEVERSION     0,2,0,0
+PRODUCTVERSION  0,2,0,0
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
@@ -11,9 +11,9 @@ BEGIN
         BEGIN
             VALUE "CompanyName",      "Cinertia Systems"
             VALUE "FileDescription",  "Mosaic Multiviewer"
-            VALUE "FileVersion",      "0.1.0.0"
+            VALUE "FileVersion",      "0.2.0.0"
             VALUE "ProductName",      "Mosaic"
-            VALUE "ProductVersion",   "0.1.0"
+            VALUE "ProductVersion",   "0.2.0"
             VALUE "LegalCopyright",   "Copyright (C) 2026 Cinertia Systems. NDI(R) is a registered trademark of Vizrt NDI AB."
             VALUE "OriginalFilename", "Mosaic.exe"
         END
@@ -23,3 +23,4 @@ BEGIN
         VALUE "Translation", 0x409, 1200
     END
 END
+
