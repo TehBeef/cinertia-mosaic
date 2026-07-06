@@ -12,17 +12,26 @@ approval from the NDI team, so everything internal uses this codename for now.
 Easy to rename later.
 
 ## Current status
-**Milestone 5 — display modes.** Settings panel (gear icon in the sidebar)
-switches between Windowed / Fullscreen (with monitor picker) / Windowless
-(frameless), plus Always-on-top and the Alt+scroll rotation toggle.
-The sidebar collapses with the « button and auto-collapses in
-fullscreen/windowless; hover the left screen edge to bring it back.
-Esc returns to windowed. In windowless mode, drag empty canvas to move
-the window. Awaiting Max's test.
-(Milestones 1–4 are complete and signed off. Rotation is Alt+scroll —
-Ctrl is reserved for snapping, and trackpad pinch = zoom. Still to come
-in Milestone 6 per Max: more presets, saved/named layouts, restore last
-session, premade broadcast multiview layouts.)
+**Milestone 5 complete and signed off.** Display modes (Windowed /
+Fullscreen with monitor picker / Windowless with edge-resize), always on
+top, collapsible sidebar (auto-collapses in fullscreen/windowless, left
+edge hover brings it back), settings panel via the gear icon, Esc returns
+to windowed. Layout presets live in the bottom status bar. Tile layouts
+scale with the canvas so mode switches keep the arrangement.
+Next: **Milestone 6 — polish/persistence**: profiles (named layout +
+source + view bundles), save/load, restore last session, premade broadcast
+multiview layouts, snap-grid shown while dragging, per-tile options,
+About dialog. Later: hotkeys and Stream Deck/Companion remote control.
+(Rotation is Alt+scroll — Ctrl is reserved for snapping; pinch = zoom.)
+
+## A bug worth remembering (fixed 2026-07-06)
+Sources seemed to vanish when switching display modes. Root cause: QML
+TapHandler's default "passive grab" lets one click fire on several
+overlapping controls at once — clicking mode buttons in the settings
+panel ALSO clicked the source list underneath, toggling sources off.
+Every tap button now uses gesturePolicy ReleaseWithinBounds (exclusive
+grab). If a future click ever seems to "leak through" an overlay, check
+for a TapHandler missing that policy.
 
 ## Files in the project
 

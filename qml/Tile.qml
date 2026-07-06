@@ -91,7 +91,7 @@ Item {
                 font.pixelSize: parent.fontSize
             }
             HoverHandler { id: btnHover }
-            TapHandler { onTapped: parent.activated() }
+            TapHandler { gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: parent.activated() }
         }
 
         // Hover header: drag to move the tile; per-tile controls right.
@@ -317,3 +317,4 @@ Item {
         Grip { anchors.right: parent.right; anchors.bottom: parent.bottom; onLeft: false; onTop: false }
     }
 }
+

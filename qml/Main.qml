@@ -34,14 +34,17 @@ ApplicationWindow {
         // the left-edge hover strip brings it back on demand.
         sidebarCollapsed = displayMode !== 0
         settingsOpen = false
-        applyDisplayMode()
+        // Deferred: changing window flags rebuilds the native window, and
+        // doing that inside a click gesture made Windows re-deliver the
+        // click into the rebuilt window — where it landed on the source
+        // list under the (now closed) settings panel and toggled a source
+        // off. Wait until the click is fully finished before rebuilding.
+        Qt.callLater(applyDisplayMode)
     }
-    onAlwaysOnTopChanged: applyDisplayMode()
+    onAlwaysOnTopChanged: Qt.callLater(applyDisplayMode)
     onFsScreenIndexChanged: {
-        if (displayMode === 1) {
-            window.visibility = Window.Windowed
-            applyDisplayMode()
-        }
+        if (displayMode === 1)
+            Qt.callLater(applyDisplayMode)
     }
 
     // Windows recreates the native window when its style flags change and
@@ -55,6 +58,10 @@ ApplicationWindow {
             savedGeom = Qt.rect(window.x, window.y, window.width, window.height)
 
         if (displayMode === 1) {
+            // Moving between monitors while already fullscreen needs a dip
+            // through windowed state or Windows keeps the old monitor.
+            if (window.visibility === Window.FullScreen)
+                window.visibility = Window.Windowed
             window.flags = Qt.Window | onTop
             const screens = Qt.application.screens
             window.screen = screens[Math.min(fsScreenIndex, screens.length - 1)]
@@ -75,24 +82,29 @@ ApplicationWindow {
     }
 
     // Esc: first cancel any active crop; otherwise return to windowed.
-    Shortcut {
-        sequence: "Escape"
-        onActivated: {
-            let cancelled = false
-            for (let i = 0; i < tileRepeater.count; i++) {
-                const t = tileRepeater.itemAt(i)
-                if (t && t.cropMode) {
-                    t.cropMode = false
-                    cancelled = true
-                }
-            }
-            if (window.settingsOpen) {
-                window.settingsOpen = false
+    function escapePressed() {
+        let cancelled = false
+        for (let i = 0; i < tileRepeater.count; i++) {
+            const t = tileRepeater.itemAt(i)
+            if (t && t.cropMode) {
+                t.cropMode = false
                 cancelled = true
             }
-            if (!cancelled && window.displayMode !== 0)
-                window.displayMode = 0
         }
+        if (settingsOpen) {
+            settingsOpen = false
+            cancelled = true
+        }
+        if (!cancelled && displayMode !== 0)
+            displayMode = 0
+    }
+
+    // Focused key catcher — Shortcut proved unreliable with nothing else
+    // holding keyboard focus, so this item owns focus and handles Esc.
+    Item {
+        id: keyCatcher
+        focus: true
+        Keys.onEscapePressed: window.escapePressed()
     }
 
     function sourceOnCanvas(name) {
@@ -182,7 +194,7 @@ ApplicationWindow {
             font.pixelSize: parent.fontSize
         }
         HoverHandler { id: btnHover }
-        TapHandler { onTapped: parent.activated() }
+        TapHandler { gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: parent.activated() }
     }
 
     Row {
@@ -291,6 +303,9 @@ ApplicationWindow {
 
                         HoverHandler { id: hover }
                         TapHandler {
+                            // Exclusive grab: without this, taps aimed at
+                            // overlays above (settings panel) also fire here.
+                            gesturePolicy: TapHandler.ReleaseWithinBounds
                             onTapped: window.toggleSource(parent.modelData)
                         }
                     }
@@ -362,7 +377,13 @@ ApplicationWindow {
 
             // Click empty canvas to deselect.
             TapHandler {
-                onTapped: canvas.selectedTile = null
+                gesturePolicy: TapHandler.ReleaseWithinBounds
+                onTapped: {
+                    canvas.selectedTile = null
+                    // Reclaim keyboard focus (e.g. after typing in a size box)
+                    // so Esc keeps working.
+                    keyCatcher.forceActiveFocus()
+                }
             }
 
             // In windowless mode, dragging empty canvas moves the window.
@@ -420,45 +441,37 @@ ApplicationWindow {
                 }
             }
 
-            // Hover-reveal canvas toolbar: layout presets + snap toggle.
+            // Hint bubble for the "?" button in the status strip.
             Rectangle {
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.margins: 20
-                width: toolRow.width + 16
-                height: 34
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 36
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: hintText.width + 20
+                height: 26
                 radius: 4
-                color: "#1a1a1ee6"
+                color: "#1a1a1e"
                 border.width: 1
                 border.color: "#2a2a2e"
-                visible: tileModel.count > 0
-                opacity: canvasHover.hovered ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 150 } }
+                visible: helpBtnHover.hovered
 
-                Row {
-                    id: toolRow
+                Text {
+                    id: hintText
                     anchors.centerIn: parent
-                    spacing: 4
-
-                    ToolBtn { label: "2×2"; onActivated: window.applyGrid(2) }
-                    ToolBtn { label: "3×3"; onActivated: window.applyGrid(3) }
-                    ToolBtn { label: "1+side"; onActivated: window.applyOnePlusSide() }
-                    ToolBtn {
-                        label: "Snap"
-                        active: window.snapOn
-                        onActivated: window.snapOn = !window.snapOn
-                    }
+                    text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Alt+scroll = rotate · Corners = resize · Ctrl = snap"
+                    color: "#8a8a90"
+                    font.pixelSize: 11
                 }
             }
 
-            // Status strip: selected tile info + interaction hints.
+            // Status strip: selected tile info, layout presets, stream info.
+            // Presets live here (not floating) so tiles can never cover them.
             // Windowless mode is pure canvas — the strip only shows on hover.
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: 26
-                color: "#141417cc"
+                height: 30
+                color: "#141417ee"
                 visible: tileModel.count > 0
                 opacity: (window.displayMode !== 2 || canvasHover.hovered) ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -467,6 +480,8 @@ ApplicationWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.leftMargin: 12
+                    anchors.right: presetRow.left
+                    anchors.rightMargin: 12
                     text: canvas.selectedTile
                           ? canvas.selectedTile.sourceName
                           : tileModel.count + " tile" + (tileModel.count === 1 ? "" : "s")
@@ -474,13 +489,29 @@ ApplicationWindow {
                     font.pixelSize: 11
                     elide: Text.ElideRight
                 }
-                Text {
+
+                Row {
+                    id: presetRow
                     anchors.centerIn: parent
-                    text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Alt+scroll = rotate · Corners = resize · Ctrl = snap"
-                    color: "#5a5a60"
-                    font.pixelSize: 10
-                    visible: canvasHover.hovered
+                    spacing: 4
+
+                    ToolBtn { label: "2×2"; height: 24; onActivated: window.applyGrid(2) }
+                    ToolBtn { label: "3×3"; height: 24; onActivated: window.applyGrid(3) }
+                    ToolBtn { label: "1+side"; height: 24; onActivated: window.applyOnePlusSide() }
+                    ToolBtn {
+                        label: "Snap"
+                        height: 24
+                        active: window.snapOn
+                        onActivated: window.snapOn = !window.snapOn
+                    }
+                    ToolBtn {
+                        id: helpBtn
+                        label: "?"
+                        height: 24
+                        HoverHandler { id: helpBtnHover }
+                    }
                 }
+
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
@@ -562,6 +593,10 @@ ApplicationWindow {
         border.width: 1
         border.color: "#2a2a2e"
 
+        // Swallow every press on the panel body so nothing can leak
+        // through to the source list sitting underneath it.
+        MouseArea { anchors.fill: parent }
+
         component CheckRow: Item {
             property string label
             property bool checked: false
@@ -596,7 +631,7 @@ ApplicationWindow {
                 color: "#d8d8dc"
                 font.pixelSize: 12
             }
-            TapHandler { onTapped: parent.toggled() }
+            TapHandler { gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: parent.toggled() }
         }
 
         Column {
@@ -733,3 +768,4 @@ ApplicationWindow {
         }
     }
 }
+
