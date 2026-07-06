@@ -82,9 +82,15 @@ ApplicationWindow {
         }
     }
 
-    // Esc: first cancel any active crop; otherwise return to windowed.
+    property bool aboutOpen: false
+
+    // Esc: first close dialogs / cancel crops; otherwise return to windowed.
     function escapePressed() {
         let cancelled = false
+        if (aboutOpen) {
+            aboutOpen = false
+            cancelled = true
+        }
         for (let i = 0; i < tileRepeater.count; i++) {
             const t = tileRepeater.itemAt(i)
             if (t && t.cropMode) {
@@ -146,7 +152,10 @@ ApplicationWindow {
                 w: it.width / canvas.width,
                 h: it.height / canvas.height,
                 z: it.z,
-                view: it.viewState()
+                view: it.viewState(),
+                showName: it.showName,
+                showMeter: it.showMeter,
+                lowBw: it.lowBw
             })
         }
         return arr
@@ -177,6 +186,9 @@ ApplicationWindow {
             maxZ = Math.max(maxZ, it.z)
             if (t.view)
                 it.setViewState(t.view)
+            it.showName = t.showName !== false
+            it.showMeter = t.showMeter === true
+            it.lowBw = t.lowBw === true
         }
         window.topZ = maxZ + 1
         canvas.selectedTile = null
@@ -1112,10 +1124,92 @@ ApplicationWindow {
                 onToggled: window.wheelRotateOn = !window.wheelRotateOn
             }
 
+            ToolBtn {
+                label: "About Mosaic…"
+                onActivated: {
+                    window.settingsOpen = false
+                    window.aboutOpen = true
+                }
+            }
+
             Text {
                 text: "Esc returns to windowed mode"
                 color: "#5a5a60"
                 font.pixelSize: 10
+            }
+        }
+    }
+
+    // ------------------------------------------------------ About dialog
+    Rectangle {
+        anchors.fill: parent
+        visible: window.aboutOpen
+        z: 300
+        color: "#000000a0"
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: window.aboutOpen = false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: 360
+            height: aboutCol.height + 40
+            radius: 6
+            color: "#1a1a1e"
+            border.width: 1
+            border.color: "#2a2a2e"
+
+            MouseArea { anchors.fill: parent } // keep clicks inside
+
+            Column {
+                id: aboutCol
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: 20
+                spacing: 10
+
+                Text {
+                    text: "Mosaic"
+                    color: "#e8e8ea"
+                    font.pixelSize: 22
+                    font.weight: Font.DemiBold
+                }
+                Text {
+                    text: "Version 0.1.0 — Cinertia Systems"
+                    color: "#8a8a90"
+                    font.pixelSize: 12
+                }
+                Text {
+                    width: parent.width
+                    text: "A professional multiviewer for NDI® video sources."
+                    color: "#d8d8dc"
+                    font.pixelSize: 12
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    width: parent.width
+                    text: "NDI® is a registered trademark of Vizrt NDI AB."
+                    color: "#8a8a90"
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    text: "Learn more at <a href='https://ndi.video/'>ndi.video</a>"
+                    color: "#8a8a90"
+                    linkColor: "#3d7eff"
+                    font.pixelSize: 11
+                    textFormat: Text.RichText
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+                }
+                Item { width: 1; height: 4 }
+                ToolBtn {
+                    label: "Close"
+                    anchors.right: parent.right
+                    onActivated: window.aboutOpen = false
+                }
             }
         }
     }

@@ -14,6 +14,11 @@ Item {
     property bool cropMode: false
     property bool wheelRotate: true
     property bool sizeOpen: false
+    property bool optsOpen: false
+    // Per-tile options (persisted with profiles and the session).
+    property bool showName: true
+    property bool showMeter: false
+    property bool lowBw: false
     // True while the user drags/resizes this tile with snapping engaged —
     // the canvas shows the snap grid while any tile has this set.
     property bool snapDragActive: false
@@ -77,7 +82,66 @@ Item {
             anchors.margins: 1
             sourceName: tile.sourceName
             wheelRotateEnabled: tile.wheelRotate
+            lowBandwidth: tile.lowBw
+            meterEnabled: tile.showMeter
             onInteracted: tile.selectRequested()
+        }
+
+        // Source name overlay (broadcast-style label, bottom center).
+        Rectangle {
+            visible: tile.showName
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 8
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: Math.min(nameLabel.implicitWidth + 16, tile.width - 24)
+            height: 20
+            radius: 3
+            color: "#000000b0"
+
+            Text {
+                id: nameLabel
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                text: tile.sourceName
+                color: "#e8e8ea"
+                font.pixelSize: 11
+                elide: Text.ElideRight
+            }
+        }
+
+        // Audio meter overlay (visual only, right edge).
+        component MeterBar: Rectangle {
+            property real level: 0
+            width: 5
+            radius: 2
+            color: "#000000a0"
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: parent.height * parent.level
+                radius: 2
+                color: parent.level > 0.9 ? "#ff4040"
+                     : parent.level > 0.75 ? "#ffd040" : "#40d060"
+            }
+        }
+
+        Row {
+            visible: tile.showMeter
+            anchors.right: parent.right
+            anchors.rightMargin: 7
+            anchors.top: parent.top
+            anchors.topMargin: 34
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 12
+            spacing: 2
+
+            MeterBar { height: parent.height; level: video.audioLeft }
+            MeterBar { height: parent.height; level: video.audioRight }
         }
 
         HoverHandler { id: tileHover }
@@ -113,7 +177,7 @@ Item {
             anchors.margins: 1
             height: 28
             color: "#1a1a1ee6"
-            opacity: (tileHover.hovered || moveArea.pressed || tile.sizeOpen) ? 1 : 0
+            opacity: (tileHover.hovered || moveArea.pressed || tile.sizeOpen || tile.optsOpen) ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
 
@@ -166,7 +230,19 @@ Item {
                 TileBtn {
                     label: "Size"
                     active: tile.sizeOpen
-                    onActivated: tile.sizeOpen = !tile.sizeOpen
+                    onActivated: {
+                        tile.sizeOpen = !tile.sizeOpen
+                        tile.optsOpen = false
+                    }
+                }
+                TileBtn {
+                    label: "⋯"
+                    fontSize: 15
+                    active: tile.optsOpen
+                    onActivated: {
+                        tile.optsOpen = !tile.optsOpen
+                        tile.sizeOpen = false
+                    }
                 }
                 TileBtn { label: "✕"; fontSize: 14; onActivated: tile.closeRequested() }
             }
@@ -229,6 +305,87 @@ Item {
                         tile.height = Math.max(tile.minH, parseInt(hBox.text) || tile.height)
                         tile.sizeOpen = false
                     }
+                }
+            }
+        }
+
+        // Per-tile options panel (opens from the ⋯ button).
+        Rectangle {
+            visible: tile.optsOpen
+            anchors.top: header.bottom
+            anchors.right: parent.right
+            anchors.margins: 4
+            width: 160
+            height: optsCol.height + 16
+            radius: 3
+            color: "#1a1a1e"
+            border.width: 1
+            border.color: "#2a2a2e"
+
+            MouseArea { anchors.fill: parent } // swallow stray presses
+
+            component OptCheck: Item {
+                property string label
+                property bool checked: false
+                signal toggled()
+                width: optsCol.width
+                height: 22
+
+                Rectangle {
+                    id: optBox
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 14
+                    height: 14
+                    radius: 2
+                    color: "transparent"
+                    border.width: 1
+                    border.color: parent.checked ? "#3d7eff" : "#4a4a50"
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 8
+                        height: 8
+                        radius: 1
+                        color: "#3d7eff"
+                        visible: parent.parent.checked
+                    }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: optBox.right
+                    anchors.leftMargin: 8
+                    text: parent.label
+                    color: "#d8d8dc"
+                    font.pixelSize: 12
+                }
+                TapHandler {
+                    gesturePolicy: TapHandler.ReleaseWithinBounds
+                    onTapped: parent.toggled()
+                }
+            }
+
+            Column {
+                id: optsCol
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: 8
+                spacing: 4
+
+                OptCheck {
+                    label: "Source name"
+                    checked: tile.showName
+                    onToggled: tile.showName = !tile.showName
+                }
+                OptCheck {
+                    label: "Audio meter"
+                    checked: tile.showMeter
+                    onToggled: tile.showMeter = !tile.showMeter
+                }
+                OptCheck {
+                    label: "Low bandwidth"
+                    checked: tile.lowBw
+                    onToggled: tile.lowBw = !tile.lowBw
                 }
             }
         }

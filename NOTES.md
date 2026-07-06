@@ -20,8 +20,14 @@ to survive even a hard process kill. New premade layouts 4×4 and 2+8
 (classic production multiview). The snap grid appears on the canvas only
 while dragging/resizing with snapping on. Saved files live in
 `C:\Users\Max\AppData\Roaming\Cinertia Systems\Mosaic\`.
-Still to come in Milestone 6: per-tile options (name overlay, audio
-meter, low-bandwidth toggle), About dialog with NDI compliance items.
+**Milestone 6b (awaiting Max's test):** every tile now has a ⋯ menu with
+three toggles — Source name (broadcast-style label, on by default),
+Audio meter (two-bar peak meter, right edge), and Low bandwidth (NDI
+proxy stream for small tiles). All three stick with profiles and the
+session. The active profile also auto-saves every change now — the Save
+button is only for creating new profiles. About dialog (gear → About
+Mosaic…) carries the NDI trademark notice and ndi.video link.
+Still to come in Milestone 6: nothing — then Milestone 7 (installer).
 Later: hotkeys and Stream Deck/Companion remote control.
 (Milestones 1–5 signed off. Rotation is Alt+scroll — Ctrl is snapping;
 pinch = zoom.)

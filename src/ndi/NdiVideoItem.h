@@ -17,15 +17,18 @@ class NdiReceiveWorker : public QObject
     Q_OBJECT
 
 public slots:
-    void start(const QString &sourceName);
+    void start(const QString &sourceName, bool lowBandwidth);
     void shutdown();
+    void setCaptureAudio(bool enabled);
 
 signals:
     void frameReady(const QImage &frame);
     void statusChanged(const QString &status);
+    void audioLevels(qreal left, qreal right);
 
 private:
     void poll();
+    void pollAudio();
     void setStatus(const QString &status);
 
     void *m_recv = nullptr;      // NDIlib_recv_instance_t
@@ -33,6 +36,9 @@ private:
     QTimer *m_timer = nullptr;
     QString m_status;
     QString m_streamInfo;
+    bool m_captureAudio = false;
+    float m_levelLeft = 0.0f;
+    float m_levelRight = 0.0f;
 };
 
 // QML type "VideoView": displays one NDI source with GPU view transforms.
@@ -55,6 +61,12 @@ class NdiVideoItem : public QQuickItem
     // Alt+scroll rotation. On by default; the future settings menu gets a
     // toggle. Ctrl is reserved for canvas snapping per Max's request.
     Q_PROPERTY(bool wheelRotateEnabled READ wheelRotateEnabled WRITE setWheelRotateEnabled NOTIFY wheelRotateEnabledChanged)
+    // Low-bandwidth (proxy) receive for tiles rendered small.
+    Q_PROPERTY(bool lowBandwidth READ lowBandwidth WRITE setLowBandwidth NOTIFY lowBandwidthChanged)
+    // Audio metering: only captures audio while a meter is shown.
+    Q_PROPERTY(bool meterEnabled READ meterEnabled WRITE setMeterEnabled NOTIFY meterEnabledChanged)
+    Q_PROPERTY(qreal audioLeft READ audioLeft NOTIFY audioLevelsChanged)
+    Q_PROPERTY(qreal audioRight READ audioRight NOTIFY audioLevelsChanged)
 
 public:
     NdiVideoItem();
@@ -69,6 +81,12 @@ public:
     bool cropped() const { return m_crop != QRectF(0, 0, 1, 1); }
     bool wheelRotateEnabled() const { return m_wheelRotateEnabled; }
     void setWheelRotateEnabled(bool enabled);
+    bool lowBandwidth() const { return m_lowBandwidth; }
+    void setLowBandwidth(bool enabled);
+    bool meterEnabled() const { return m_meterEnabled; }
+    void setMeterEnabled(bool enabled);
+    qreal audioLeft() const { return m_audioLeft; }
+    qreal audioRight() const { return m_audioRight; }
 
     Q_INVOKABLE void resetView();    // zoom, pan, rotation and crop
     Q_INVOKABLE void resetZoomPan(); // double-click: keep rotation/crop
@@ -86,6 +104,9 @@ signals:
     void viewChanged();
     void wheelRotateEnabledChanged();
     void videoSizeChanged();
+    void lowBandwidthChanged();
+    void meterEnabledChanged();
+    void audioLevelsChanged();
     void interacted(); // any click/scroll on the video — used to select tiles
 
 protected:
@@ -100,6 +121,7 @@ protected:
 private:
     void onFrame(const QImage &frame);
     void onStatus(const QString &status);
+    void onAudioLevels(qreal left, qreal right);
     QRectF fitRect() const;          // letterboxed quad at zoom 1
     QTransform viewTransform() const;
     void setZoomAt(qreal newZoom, const QPointF &anchor);
@@ -121,4 +143,8 @@ private:
     QPointF m_lastMousePos;
     bool m_panning = false;
     bool m_wheelRotateEnabled = true;
+    bool m_lowBandwidth = false;
+    bool m_meterEnabled = false;
+    qreal m_audioLeft = 0.0;
+    qreal m_audioRight = 0.0;
 };

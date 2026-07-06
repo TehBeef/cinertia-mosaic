@@ -22,7 +22,7 @@ constexpr qreal kMinCropSize = 0.01;    // normalized
 
 // ---------------------------------------------------------------- worker
 
-void NdiReceiveWorker::start(const QString &sourceName)
+void NdiReceiveWorker::start(const QString &sourceName, bool lowBandwidth)
 {
     shutdown();
 
@@ -36,7 +36,8 @@ void NdiReceiveWorker::start(const QString &sourceName)
     NDIlib_recv_create_v3_t desc;
     desc.source_to_connect_to = source;
     desc.color_format = NDIlib_recv_color_format_BGRX_BGRA;
-    desc.bandwidth = NDIlib_recv_bandwidth_highest;
+    desc.bandwidth = lowBandwidth ? NDIlib_recv_bandwidth_lowest
+                                  : NDIlib_recv_bandwidth_highest;
     desc.allow_video_fields = false;
     desc.p_ndi_recv_name = nullptr;
 
@@ -74,12 +75,26 @@ void NdiReceiveWorker::shutdown()
         m_recv = nullptr;
     }
     m_streamInfo.clear();
+    m_levelLeft = 0.0f;
+    m_levelRight = 0.0f;
+}
+
+void NdiReceiveWorker::setCaptureAudio(bool enabled)
+{
+    m_captureAudio = enabled;
+    if (!enabled) {
+        m_levelLeft = 0.0f;
+        m_levelRight = 0.0f;
+    }
 }
 
 void NdiReceiveWorker::poll()
 {
     if (!m_framesync)
         return;
+
+    if (m_captureAudio)
+        pollAudio();
 
     NDIlib_video_frame_v2_t frame;
     NDIlib_framesync_capture_video(
@@ -121,6 +136,49 @@ void NdiReceiveWorker::poll()
     }
 }
 
+void NdiReceiveWorker::pollAudio()
+{
+    // Pull ~one tick of audio; the frame sync resamples for us. Peak per
+    // channel is mapped to 0..1 over a -60..0 dBFS range with a decay so
+    // the meter falls smoothly.
+    NDIlib_audio_frame_v2_t frame;
+    NDIlib_framesync_capture_audio(
+        static_cast<NDIlib_framesync_instance_t>(m_framesync), &frame,
+        48000, 2, 800);
+
+    float peakL = 0.0f;
+    float peakR = 0.0f;
+    if (frame.p_data && frame.no_samples > 0) {
+        const int channels = qMin(2, frame.no_channels);
+        for (int c = 0; c < channels; ++c) {
+            const float *samples = reinterpret_cast<const float *>(
+                reinterpret_cast<const quint8 *>(frame.p_data)
+                + c * frame.channel_stride_in_bytes);
+            float peak = 0.0f;
+            for (int i = 0; i < frame.no_samples; ++i)
+                peak = qMax(peak, qAbs(samples[i]));
+            if (c == 0)
+                peakL = peak;
+            else
+                peakR = peak;
+        }
+        if (channels == 1)
+            peakR = peakL;
+    }
+    NDIlib_framesync_free_audio(
+        static_cast<NDIlib_framesync_instance_t>(m_framesync), &frame);
+
+    const auto toNorm = [](float peak) -> float {
+        if (peak <= 0.001f)
+            return 0.0f;
+        const double db = 20.0 * std::log10(double(peak));
+        return float(qBound(0.0, 1.0 + db / 60.0, 1.0));
+    };
+    m_levelLeft = qMax(toNorm(peakL), m_levelLeft * 0.85f);
+    m_levelRight = qMax(toNorm(peakR), m_levelRight * 0.85f);
+    emit audioLevels(m_levelLeft, m_levelRight);
+}
+
 void NdiReceiveWorker::setStatus(const QString &status)
 {
     if (status == m_status)
@@ -143,6 +201,8 @@ NdiVideoItem::NdiVideoItem()
             this, &NdiVideoItem::onFrame, Qt::QueuedConnection);
     connect(m_worker, &NdiReceiveWorker::statusChanged,
             this, &NdiVideoItem::onStatus, Qt::QueuedConnection);
+    connect(m_worker, &NdiReceiveWorker::audioLevels,
+            this, &NdiVideoItem::onAudioLevels, Qt::QueuedConnection);
     m_thread.start();
 }
 
@@ -165,7 +225,9 @@ void NdiVideoItem::setSourceName(const QString &name)
         onStatus(QString());
     } else {
         QMetaObject::invokeMethod(
-            m_worker, [worker = m_worker, name] { worker->start(name); });
+            m_worker, [worker = m_worker, name, low = m_lowBandwidth] {
+                worker->start(name, low);
+            });
     }
 
     // Drop the last frame of the previous source and start the view fresh.
@@ -346,6 +408,45 @@ void NdiVideoItem::setWheelRotateEnabled(bool enabled)
         return;
     m_wheelRotateEnabled = enabled;
     emit wheelRotateEnabledChanged();
+}
+
+void NdiVideoItem::setLowBandwidth(bool enabled)
+{
+    if (enabled == m_lowBandwidth)
+        return;
+    m_lowBandwidth = enabled;
+    emit lowBandwidthChanged();
+    // Bandwidth is a receiver creation parameter — reconnect to apply.
+    if (!m_sourceName.isEmpty()) {
+        QMetaObject::invokeMethod(
+            m_worker, [worker = m_worker, name = m_sourceName, enabled] {
+                worker->start(name, enabled);
+            });
+    }
+}
+
+void NdiVideoItem::setMeterEnabled(bool enabled)
+{
+    if (enabled == m_meterEnabled)
+        return;
+    m_meterEnabled = enabled;
+    emit meterEnabledChanged();
+    QMetaObject::invokeMethod(
+        m_worker, [worker = m_worker, enabled] {
+            worker->setCaptureAudio(enabled);
+        });
+    if (!enabled) {
+        m_audioLeft = 0.0;
+        m_audioRight = 0.0;
+        emit audioLevelsChanged();
+    }
+}
+
+void NdiVideoItem::onAudioLevels(qreal left, qreal right)
+{
+    m_audioLeft = left;
+    m_audioRight = right;
+    emit audioLevelsChanged();
 }
 
 void NdiVideoItem::mousePressEvent(QMouseEvent *event)
