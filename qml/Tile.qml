@@ -19,6 +19,10 @@ Item {
     property bool showName: true
     property bool showMeter: false
     property bool lowBw: false
+    property bool lowLat: false
+    // Master switch from settings — hides all labels regardless of the
+    // per-tile toggle.
+    property bool globalShowName: true
     // Custom label (e.g. "CAM 1 — STAGE LEFT"); empty = show source name.
     property string customName: ""
     readonly property string displayName: customName !== "" ? customName : sourceName
@@ -36,13 +40,20 @@ Item {
     width: 480
     height: 270
 
-    // Selection accent fades out after a few seconds of no interaction.
+    // Selection accent fades after a few seconds of mouse inactivity and
+    // wakes when the mouse moves anywhere in the window (Main wires that
+    // up via wakeHighlight()).
     property bool highlightFaded: false
-    onSelectedChanged: highlightFaded = false
-    onSelectRequested: highlightFaded = false
+    function wakeHighlight() {
+        highlightFaded = false
+        if (selected)
+            fadeTimer.restart()
+    }
+    onSelectedChanged: wakeHighlight()
+    onSelectRequested: wakeHighlight()
     Timer {
+        id: fadeTimer
         interval: 3000
-        running: tile.selected && !tileHover.hovered && !tile.highlightFaded
         onTriggered: tile.highlightFaded = true
     }
 
@@ -107,6 +118,7 @@ Item {
             sourceName: tile.sourceName
             wheelRotateEnabled: tile.wheelRotate
             lowBandwidth: tile.lowBw
+            lowLatency: tile.lowLat
             meterEnabled: tile.showMeter
             onInteracted: {
                 tile.selectRequested()
@@ -116,7 +128,7 @@ Item {
 
         // Source name overlay (broadcast-style label, bottom center).
         Rectangle {
-            visible: tile.showName
+            visible: tile.showName && tile.globalShowName
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 8
             anchors.horizontalCenter: parent.horizontalCenter
@@ -173,12 +185,9 @@ Item {
 
         HoverHandler {
             id: tileHover
-            // Leaving the tile closes its popup menus (click-away/move-away)
-            // and wakes the selection highlight while hovering.
+            // Leaving the tile closes its popup menus (click-away/move-away).
             onHoveredChanged: {
-                if (hovered)
-                    tile.highlightFaded = false
-                else
+                if (!hovered)
                     tile.closePopups()
             }
         }
@@ -461,6 +470,11 @@ Item {
                     label: "Low bandwidth"
                     checked: tile.lowBw
                     onToggled: tile.lowBw = !tile.lowBw
+                }
+                OptCheck {
+                    label: "Low latency"
+                    checked: tile.lowLat
+                    onToggled: tile.lowLat = !tile.lowLat
                 }
             }
         }

@@ -24,6 +24,21 @@ ApplicationWindow {
     property bool wheelRotateOn: true
     // Gutter used by the layout templates. 0 = seamless, edge to edge.
     property int tileGap: 8
+    // Master switch for all tile name labels.
+    property bool showTileNames: true
+
+    // Any mouse movement in the window wakes the selected tile's accent
+    // so the user can always find the active tile by nudging the mouse.
+    Item {
+        anchors.fill: parent
+        z: -1
+        HoverHandler {
+            onPointChanged: {
+                if (canvas.selectedTile)
+                    canvas.selectedTile.wakeHighlight()
+            }
+        }
+    }
 
     // Display modes: 0 = windowed, 1 = fullscreen, 2 = windowless
     property int displayMode: 0
@@ -164,6 +179,7 @@ ApplicationWindow {
                 showName: it.showName,
                 showMeter: it.showMeter,
                 lowBw: it.lowBw,
+                lowLat: it.lowLat,
                 customName: it.customName
             })
         }
@@ -198,6 +214,7 @@ ApplicationWindow {
             it.showName = t.showName !== false
             it.showMeter = t.showMeter === true
             it.lowBw = t.lowBw === true
+            it.lowLat = t.lowLat === true
             it.customName = t.customName || ""
         }
         window.topZ = maxZ + 1
@@ -265,6 +282,7 @@ ApplicationWindow {
             snapOn: snapOn,
             wheelRotateOn: wheelRotateOn,
             tileGap: tileGap,
+            showTileNames: showTileNames,
             currentProfile: currentProfile,
             tiles: captureTiles()
         }))
@@ -293,6 +311,7 @@ ApplicationWindow {
                 wheelRotateOn = s.wheelRotateOn !== false
                 if (s.tileGap !== undefined)
                     tileGap = s.tileGap
+                showTileNames = s.showTileNames !== false
                 currentProfile = s.currentProfile || ""
                 applyTiles(s.tiles || [])
             }
@@ -846,6 +865,7 @@ ApplicationWindow {
                         sourceName: name
                         snapEnabled: window.snapOn
                         wheelRotate: window.wheelRotateOn
+                        globalShowName: window.showTileNames
                         gridSize: 16
                         selected: canvas.selectedTile === this
                         onSnapDragActiveChanged:
@@ -1154,6 +1174,11 @@ ApplicationWindow {
                 checked: window.wheelRotateOn
                 onToggled: window.wheelRotateOn = !window.wheelRotateOn
             }
+            CheckRow {
+                label: "Show tile names"
+                checked: window.showTileNames
+                onToggled: window.showTileNames = !window.showTileNames
+            }
 
             Text {
                 text: "TILE SPACING (LAYOUTS)"
@@ -1256,6 +1281,22 @@ ApplicationWindow {
                 }
                 Text {
                     text: "Learn more at <a href='https://ndi.video/'>ndi.video</a>"
+                    color: "#8a8a90"
+                    linkColor: "#3d7eff"
+                    font.pixelSize: 11
+                    textFormat: Text.RichText
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+                }
+                Text {
+                    text: "Support: <a href='mailto:max@cinertia.systems'>max@cinertia.systems</a>"
+                    color: "#8a8a90"
+                    linkColor: "#3d7eff"
+                    font.pixelSize: 11
+                    textFormat: Text.RichText
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+                }
+                Text {
+                    text: "<a href='https://cinertia.systems/'>Cinertia.Systems</a>"
                     color: "#8a8a90"
                     linkColor: "#3d7eff"
                     font.pixelSize: 11

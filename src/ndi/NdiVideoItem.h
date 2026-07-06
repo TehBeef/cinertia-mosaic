@@ -17,7 +17,7 @@ class NdiReceiveWorker : public QObject
     Q_OBJECT
 
 public slots:
-    void start(const QString &sourceName, bool lowBandwidth);
+    void start(const QString &sourceName, bool lowBandwidth, bool lowLatency);
     void shutdown();
     void setCaptureAudio(bool enabled);
 
@@ -28,7 +28,9 @@ signals:
 
 private:
     void poll();
+    void pollDirect(); // low-latency path: no frame sync buffering
     void pollAudio();
+    void updateLevels(float peakL, float peakR);
     void setStatus(const QString &status);
 
     void *m_recv = nullptr;      // NDIlib_recv_instance_t
@@ -37,6 +39,7 @@ private:
     QString m_status;
     QString m_streamInfo;
     bool m_captureAudio = false;
+    bool m_lowLatency = false;
     float m_levelLeft = 0.0f;
     float m_levelRight = 0.0f;
 };
@@ -63,6 +66,9 @@ class NdiVideoItem : public QQuickItem
     Q_PROPERTY(bool wheelRotateEnabled READ wheelRotateEnabled WRITE setWheelRotateEnabled NOTIFY wheelRotateEnabledChanged)
     // Low-bandwidth (proxy) receive for tiles rendered small.
     Q_PROPERTY(bool lowBandwidth READ lowBandwidth WRITE setLowBandwidth NOTIFY lowBandwidthChanged)
+    // Low latency: bypass the frame sync and show frames as they arrive
+    // (slightly less smooth, roughly a frame less delay).
+    Q_PROPERTY(bool lowLatency READ lowLatency WRITE setLowLatency NOTIFY lowLatencyChanged)
     // Audio metering: only captures audio while a meter is shown.
     Q_PROPERTY(bool meterEnabled READ meterEnabled WRITE setMeterEnabled NOTIFY meterEnabledChanged)
     Q_PROPERTY(qreal audioLeft READ audioLeft NOTIFY audioLevelsChanged)
@@ -83,6 +89,8 @@ public:
     void setWheelRotateEnabled(bool enabled);
     bool lowBandwidth() const { return m_lowBandwidth; }
     void setLowBandwidth(bool enabled);
+    bool lowLatency() const { return m_lowLatency; }
+    void setLowLatency(bool enabled);
     bool meterEnabled() const { return m_meterEnabled; }
     void setMeterEnabled(bool enabled);
     qreal audioLeft() const { return m_audioLeft; }
@@ -105,6 +113,7 @@ signals:
     void wheelRotateEnabledChanged();
     void videoSizeChanged();
     void lowBandwidthChanged();
+    void lowLatencyChanged();
     void meterEnabledChanged();
     void audioLevelsChanged();
     void interacted(); // any click/scroll on the video — used to select tiles
@@ -144,6 +153,7 @@ private:
     bool m_panning = false;
     bool m_wheelRotateEnabled = true;
     bool m_lowBandwidth = false;
+    bool m_lowLatency = false;
     bool m_meterEnabled = false;
     qreal m_audioLeft = 0.0;
     qreal m_audioRight = 0.0;

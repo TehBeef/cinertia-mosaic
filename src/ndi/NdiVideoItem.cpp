@@ -22,10 +22,12 @@ constexpr qreal kMinCropSize = 0.01;    // normalized
 
 // ---------------------------------------------------------------- worker
 
-void NdiReceiveWorker::start(const QString &sourceName, bool lowBandwidth)
+void NdiReceiveWorker::start(const QString &sourceName, bool lowBandwidth,
+                             bool lowLatency)
 {
     shutdown();
 
+    m_lowLatency = lowLatency;
     setStatus(QStringLiteral("Connecting…"));
 
     const QByteArray nameUtf8 = sourceName.toUtf8();
@@ -47,15 +49,18 @@ void NdiReceiveWorker::start(const QString &sourceName, bool lowBandwidth)
         return;
     }
 
-    m_framesync = NDIlib_framesync_create(
-        static_cast<NDIlib_recv_instance_t>(m_recv));
+    // Normal mode: frame sync resamples the source clock for smooth
+    // timing, polled at ~60 Hz. Low latency: no frame sync — poll the
+    // receiver directly every 2 ms and show frames the moment they land.
+    if (!m_lowLatency) {
+        m_framesync = NDIlib_framesync_create(
+            static_cast<NDIlib_recv_instance_t>(m_recv));
+    }
 
-    // The frame sync resamples the source clock; we pull at ~60 Hz which
-    // matches the display. Runs on this worker thread.
     m_timer = new QTimer(this);
     m_timer->setTimerType(Qt::PreciseTimer);
     connect(m_timer, &QTimer::timeout, this, &NdiReceiveWorker::poll);
-    m_timer->start(16);
+    m_timer->start(m_lowLatency ? 2 : 16);
 }
 
 void NdiReceiveWorker::shutdown()
@@ -90,6 +95,11 @@ void NdiReceiveWorker::setCaptureAudio(bool enabled)
 
 void NdiReceiveWorker::poll()
 {
+    if (m_lowLatency) {
+        pollDirect();
+        return;
+    }
+
     if (!m_framesync)
         return;
 
@@ -136,6 +146,70 @@ void NdiReceiveWorker::poll()
     }
 }
 
+void NdiReceiveWorker::pollDirect()
+{
+    if (!m_recv)
+        return;
+
+    const auto recv = static_cast<NDIlib_recv_instance_t>(m_recv);
+
+    // Drain whatever arrived since the last tick (a few frames at most).
+    for (int i = 0; i < 4; ++i) {
+        NDIlib_video_frame_v2_t video;
+        NDIlib_audio_frame_v3_t audio;
+        const NDIlib_frame_type_e type = NDIlib_recv_capture_v3(
+            recv, &video, m_captureAudio ? &audio : nullptr, nullptr, 0);
+
+        if (type == NDIlib_frame_type_video) {
+            const QImage::Format format =
+                (video.FourCC == NDIlib_FourCC_video_type_BGRA)
+                    ? QImage::Format_ARGB32
+                    : QImage::Format_RGB32;
+            const QImage wrapped(
+                reinterpret_cast<const uchar *>(video.p_data),
+                video.xres, video.yres, video.line_stride_in_bytes, format);
+            emit frameReady(wrapped.copy());
+
+            const double fps = video.frame_rate_D
+                ? double(video.frame_rate_N) / double(video.frame_rate_D)
+                : 0.0;
+            const QString info = QStringLiteral("%1×%2 @ %3 fps · low latency")
+                .arg(video.xres)
+                .arg(video.yres)
+                .arg(fps, 0, 'f', 2);
+            NDIlib_recv_free_video_v2(recv, &video);
+            if (info != m_streamInfo) {
+                m_streamInfo = info;
+                setStatus(info);
+            }
+        } else if (type == NDIlib_frame_type_audio) {
+            float peakL = 0.0f;
+            float peakR = 0.0f;
+            if (audio.p_data && audio.no_samples > 0) {
+                const int channels = qMin(2, audio.no_channels);
+                for (int c = 0; c < channels; ++c) {
+                    const float *samples = reinterpret_cast<const float *>(
+                        reinterpret_cast<const quint8 *>(audio.p_data)
+                        + c * audio.channel_stride_in_bytes);
+                    float peak = 0.0f;
+                    for (int s = 0; s < audio.no_samples; ++s)
+                        peak = qMax(peak, qAbs(samples[s]));
+                    if (c == 0)
+                        peakL = peak;
+                    else
+                        peakR = peak;
+                }
+                if (channels == 1)
+                    peakR = peakL;
+            }
+            NDIlib_recv_free_audio_v3(recv, &audio);
+            updateLevels(peakL, peakR);
+        } else {
+            break; // nothing waiting
+        }
+    }
+}
+
 void NdiReceiveWorker::pollAudio()
 {
     // Pull ~one tick of audio; the frame sync resamples for us. Peak per
@@ -168,6 +242,11 @@ void NdiReceiveWorker::pollAudio()
     NDIlib_framesync_free_audio(
         static_cast<NDIlib_framesync_instance_t>(m_framesync), &frame);
 
+    updateLevels(peakL, peakR);
+}
+
+void NdiReceiveWorker::updateLevels(float peakL, float peakR)
+{
     const auto toNorm = [](float peak) -> float {
         if (peak <= 0.001f)
             return 0.0f;
@@ -225,8 +304,9 @@ void NdiVideoItem::setSourceName(const QString &name)
         onStatus(QString());
     } else {
         QMetaObject::invokeMethod(
-            m_worker, [worker = m_worker, name, low = m_lowBandwidth] {
-                worker->start(name, low);
+            m_worker, [worker = m_worker, name, low = m_lowBandwidth,
+                       lat = m_lowLatency] {
+                worker->start(name, low, lat);
             });
     }
 
@@ -419,8 +499,24 @@ void NdiVideoItem::setLowBandwidth(bool enabled)
     // Bandwidth is a receiver creation parameter — reconnect to apply.
     if (!m_sourceName.isEmpty()) {
         QMetaObject::invokeMethod(
-            m_worker, [worker = m_worker, name = m_sourceName, enabled] {
-                worker->start(name, enabled);
+            m_worker, [worker = m_worker, name = m_sourceName, enabled,
+                       lat = m_lowLatency] {
+                worker->start(name, enabled, lat);
+            });
+    }
+}
+
+void NdiVideoItem::setLowLatency(bool enabled)
+{
+    if (enabled == m_lowLatency)
+        return;
+    m_lowLatency = enabled;
+    emit lowLatencyChanged();
+    if (!m_sourceName.isEmpty()) {
+        QMetaObject::invokeMethod(
+            m_worker, [worker = m_worker, name = m_sourceName,
+                       low = m_lowBandwidth, enabled] {
+                worker->start(name, low, enabled);
             });
     }
 }
