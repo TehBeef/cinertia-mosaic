@@ -214,31 +214,39 @@ ApplicationWindow {
                 font.pixelSize: 16
             }
 
-            Repeater {
-                id: tileRepeater
-                model: tileModel
+            // Tiles live in their own layer so their z-order competition
+            // stays among themselves — toolbar and status strip are
+            // siblings drawn above this layer and can never be covered.
+            Item {
+                id: tileLayer
+                anchors.fill: parent
 
-                delegate: Tile {
+                Repeater {
+                    id: tileRepeater
+                    model: tileModel
+
+                    delegate: Tile {
                     required property int index
                     required property string name
-                    sourceName: name
-                    snapEnabled: window.snapOn
-                    gridSize: 16
-                    selected: canvas.selectedTile === this
-                    Component.onCompleted: {
-                        x = 24 + (index % 5) * 40
-                        y = 24 + (index % 5) * 40
-                        z = ++window.topZ
-                        canvas.selectedTile = this
-                    }
-                    onSelectRequested: {
-                        canvas.selectedTile = this
-                        z = ++window.topZ
-                    }
-                    onCloseRequested: {
-                        if (canvas.selectedTile === this)
-                            canvas.selectedTile = null
-                        tileModel.remove(index)
+                        sourceName: name
+                        snapEnabled: window.snapOn
+                        gridSize: 16
+                        selected: canvas.selectedTile === this
+                        Component.onCompleted: {
+                            x = 24 + (index % 5) * 40
+                            y = 24 + (index % 5) * 40
+                            z = ++window.topZ
+                            canvas.selectedTile = this
+                        }
+                        onSelectRequested: {
+                            canvas.selectedTile = this
+                            z = ++window.topZ
+                        }
+                        onCloseRequested: {
+                            if (canvas.selectedTile === this)
+                                canvas.selectedTile = null
+                            tileModel.remove(index)
+                        }
                     }
                 }
             }
