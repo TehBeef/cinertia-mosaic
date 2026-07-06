@@ -38,6 +38,8 @@ qt_add_qml_module(Mosaic
     QML_FILES
         qml/Main.qml
         qml/Tile.qml
+    RESOURCES
+        resources/mosaic-logo.png
     SOURCES
         src/Storage.h
         src/Storage.cpp

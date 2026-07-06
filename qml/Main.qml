@@ -22,6 +22,8 @@ ApplicationWindow {
     property int topZ: 0
     property bool snapOn: false
     property bool wheelRotateOn: true
+    // Gutter used by the layout templates. 0 = seamless, edge to edge.
+    property int tileGap: 8
 
     // Display modes: 0 = windowed, 1 = fullscreen, 2 = windowless
     property int displayMode: 0
@@ -93,8 +95,14 @@ ApplicationWindow {
         }
         for (let i = 0; i < tileRepeater.count; i++) {
             const t = tileRepeater.itemAt(i)
-            if (t && t.cropMode) {
+            if (!t)
+                continue
+            if (t.cropMode) {
                 t.cropMode = false
+                cancelled = true
+            }
+            if (t.optsOpen || t.sizeOpen) {
+                t.closePopups()
                 cancelled = true
             }
         }
@@ -256,9 +264,18 @@ ApplicationWindow {
             version: 1,
             snapOn: snapOn,
             wheelRotateOn: wheelRotateOn,
+            tileGap: tileGap,
             currentProfile: currentProfile,
             tiles: captureTiles()
         }))
+    }
+
+    function closeTilePopups() {
+        for (let i = 0; i < tileRepeater.count; i++) {
+            const t = tileRepeater.itemAt(i)
+            if (t)
+                t.closePopups()
+        }
     }
 
     Component.onCompleted: {
@@ -274,6 +291,8 @@ ApplicationWindow {
             if (s) {
                 snapOn = s.snapOn === true
                 wheelRotateOn = s.wheelRotateOn !== false
+                if (s.tileGap !== undefined)
+                    tileGap = s.tileGap
                 currentProfile = s.currentProfile || ""
                 applyTiles(s.tiles || [])
             }
@@ -308,7 +327,7 @@ ApplicationWindow {
         if (n === 0)
             return
         const rows = Math.ceil(n / cols)
-        const gut = 8
+        const gut = tileGap
         const cw = (canvas.width - gut * (cols + 1)) / cols
         const ch = (canvas.height - gut * (rows + 1)) / rows
         for (let i = 0; i < n; i++) {
@@ -330,7 +349,7 @@ ApplicationWindow {
             applyGrid(1)
             return
         }
-        const gut = 8
+        const gut = tileGap
         const bigW = (canvas.width - gut * 3) * 2 / 3
         const big = tileRepeater.itemAt(0)
         big.x = gut
@@ -356,7 +375,7 @@ ApplicationWindow {
         const n = tileRepeater.count
         if (n === 0)
             return
-        const gut = 8
+        const gut = tileGap
         const topN = Math.min(2, n)
         const rest = n - topN
         const topH = rest > 0 ? (canvas.height - 2 * gut) * 0.55
@@ -432,16 +451,29 @@ ApplicationWindow {
                 anchors.margins: 12
                 spacing: 8
 
+                // App title bar: logo + name, settings gear, collapse.
                 Item {
                     width: parent.width
-                    height: 30
+                    height: 34
 
-                    Text {
+                    Row {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "NDI® Sources"
-                        color: "#e8e8ea"
-                        font.pixelSize: 15
-                        font.weight: Font.DemiBold
+                        spacing: 8
+
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "../resources/mosaic-logo.png"
+                            width: 24
+                            height: 24
+                            smooth: true
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Mosaic"
+                            color: "#e8e8ea"
+                            font.pixelSize: 16
+                            font.weight: Font.DemiBold
+                        }
                     }
                     Row {
                         anchors.verticalCenter: parent.verticalCenter
@@ -465,6 +497,11 @@ ApplicationWindow {
                 }
 
                 Text {
+                    text: "NDI® SOURCES"
+                    color: "#5a5a60"
+                    font.pixelSize: 10
+                }
+                Text {
                     text: finder.sources.length === 0
                           ? "Searching the network…"
                           : finder.sources.length + " found — click to add/remove"
@@ -475,7 +512,7 @@ ApplicationWindow {
                 ListView {
                     id: sourceList
                     width: parent.width
-                    height: parent.height - y - profilesSec.height - footer.height - 32
+                    height: parent.height - y - layoutsSec.height - profilesSec.height - footer.height - 48
                     clip: true
                     spacing: 4
                     model: finder.sources
@@ -522,6 +559,36 @@ ApplicationWindow {
                             // overlays above (settings panel) also fire here.
                             gesturePolicy: TapHandler.ReleaseWithinBounds
                             onTapped: window.toggleSource(parent.modelData)
+                        }
+                    }
+                }
+
+                // --------------------------------------------- layouts
+                Column {
+                    id: layoutsSec
+                    width: parent.width
+                    spacing: 4
+
+                    Text {
+                        text: "LAYOUTS"
+                        color: "#5a5a60"
+                        font.pixelSize: 10
+                    }
+
+                    Flow {
+                        width: parent.width
+                        spacing: 4
+
+                        ToolBtn { label: "2×2"; height: 24; onActivated: window.applyGrid(2) }
+                        ToolBtn { label: "3×3"; height: 24; onActivated: window.applyGrid(3) }
+                        ToolBtn { label: "4×4"; height: 24; onActivated: window.applyGrid(4) }
+                        ToolBtn { label: "1+side"; height: 24; onActivated: window.applyOnePlusSide() }
+                        ToolBtn { label: "2+8"; height: 24; onActivated: window.applyTwoPlusEight() }
+                        ToolBtn {
+                            label: "Snap"
+                            height: 24
+                            active: window.snapOn
+                            onActivated: window.snapOn = !window.snapOn
                         }
                     }
                 }
@@ -702,11 +769,12 @@ ApplicationWindow {
 
             HoverHandler { id: canvasHover }
 
-            // Click empty canvas to deselect.
+            // Click empty canvas to deselect and close any open tile menus.
             TapHandler {
                 gesturePolicy: TapHandler.ReleaseWithinBounds
                 onTapped: {
                     canvas.selectedTile = null
+                    window.closeTilePopups()
                     // Reclaim keyboard focus (e.g. after typing in a size box)
                     // so Esc keeps working.
                     keyCatcher.forceActiveFocus()
@@ -805,46 +873,31 @@ ApplicationWindow {
                 }
             }
 
-            // Hint bubble for the "?" button in the status strip.
-            Rectangle {
+            // Auto-hiding status bar: tiles get the whole canvas; move the
+            // mouse to the bottom edge to peek at selected-tile info.
+            Item {
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: 36
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: hintText.width + 20
-                height: 26
-                radius: 4
-                color: "#1a1a1e"
-                border.width: 1
-                border.color: "#2a2a2e"
-                visible: helpBtnHover.hovered
-
-                Text {
-                    id: hintText
-                    anchors.centerIn: parent
-                    text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Alt+scroll = rotate · Corners = resize · Ctrl = snap"
-                    color: "#8a8a90"
-                    font.pixelSize: 11
-                }
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 44
+                HoverHandler { id: bottomZone }
             }
 
-            // Status strip: selected tile info, layout presets, stream info.
-            // Presets live here (not floating) so tiles can never cover them.
-            // Windowless mode is pure canvas — the strip only shows on hover.
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: 30
+                height: 28
                 color: "#141417ee"
-                visible: tileModel.count > 0
-                opacity: (window.displayMode !== 2 || canvasHover.hovered) ? 1 : 0
+                visible: opacity > 0 && tileModel.count > 0
+                opacity: bottomZone.hovered ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: 150 } }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.leftMargin: 12
-                    anchors.right: presetRow.left
+                    anchors.right: stripStatus.left
                     anchors.rightMargin: 12
                     text: canvas.selectedTile
                           ? canvas.selectedTile.displayName
@@ -853,32 +906,8 @@ ApplicationWindow {
                     font.pixelSize: 11
                     elide: Text.ElideRight
                 }
-
-                Row {
-                    id: presetRow
-                    anchors.centerIn: parent
-                    spacing: 4
-
-                    ToolBtn { label: "2×2"; height: 24; onActivated: window.applyGrid(2) }
-                    ToolBtn { label: "3×3"; height: 24; onActivated: window.applyGrid(3) }
-                    ToolBtn { label: "4×4"; height: 24; onActivated: window.applyGrid(4) }
-                    ToolBtn { label: "1+side"; height: 24; onActivated: window.applyOnePlusSide() }
-                    ToolBtn { label: "2+8"; height: 24; onActivated: window.applyTwoPlusEight() }
-                    ToolBtn {
-                        label: "Snap"
-                        height: 24
-                        active: window.snapOn
-                        onActivated: window.snapOn = !window.snapOn
-                    }
-                    ToolBtn {
-                        id: helpBtn
-                        label: "?"
-                        height: 24
-                        HoverHandler { id: helpBtnHover }
-                    }
-                }
-
                 Text {
+                    id: stripStatus
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
                     anchors.rightMargin: 12
@@ -1126,6 +1155,31 @@ ApplicationWindow {
                 onToggled: window.wheelRotateOn = !window.wheelRotateOn
             }
 
+            Text {
+                text: "TILE SPACING (LAYOUTS)"
+                color: "#5a5a60"
+                font.pixelSize: 10
+            }
+            Row {
+                spacing: 6
+
+                NumBox { id: gapBox; value: window.tileGap }
+                ToolBtn {
+                    label: "Set"
+                    onActivated: {
+                        const g = parseInt(gapBox.text)
+                        window.tileGap = isNaN(g) ? 0 : Math.max(0, Math.min(64, g))
+                        gapBox.value = window.tileGap
+                    }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "px — 0 = seamless"
+                    color: "#5a5a60"
+                    font.pixelSize: 11
+                }
+            }
+
             ToolBtn {
                 label: "About Mosaic…"
                 onActivated: {
@@ -1135,9 +1189,11 @@ ApplicationWindow {
             }
 
             Text {
-                text: "Esc returns to windowed mode"
+                width: parent.width
+                text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Alt+scroll = rotate · Corners = resize · Ctrl = snap · Esc = windowed"
                 color: "#5a5a60"
                 font.pixelSize: 10
+                wrapMode: Text.WordWrap
             }
         }
     }

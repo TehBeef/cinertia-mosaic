@@ -36,6 +36,21 @@ Item {
     width: 480
     height: 270
 
+    // Selection accent fades out after a few seconds of no interaction.
+    property bool highlightFaded: false
+    onSelectedChanged: highlightFaded = false
+    onSelectRequested: highlightFaded = false
+    Timer {
+        interval: 3000
+        running: tile.selected && !tileHover.hovered && !tile.highlightFaded
+        onTriggered: tile.highlightFaded = true
+    }
+
+    function closePopups() {
+        optsOpen = false
+        sizeOpen = false
+    }
+
     readonly property int minW: 160
     readonly property int minH: 90
 
@@ -45,16 +60,22 @@ Item {
         anchors.fill: parent
         color: "#101013"
         border.width: 1
-        border.color: tile.selected ? "#3d7eff" : "#26262b"
+        border.color: (tile.selected && !tile.highlightFaded) ? "#3d7eff" : "#26262b"
+        Behavior on border.color { ColorAnimation { duration: 400 } }
         clip: true // video must never draw outside its tile
 
         // Shared move-the-tile drag logic. The body instance sits under the
         // video: it receives drags when the video is at fit zoom (nothing
         // to pan), so grabbing a tile anywhere moves it.
         component MoveArea: MouseArea {
+            // The header instance keeps popups open (their buttons live
+            // there); a press anywhere else counts as clicking off them.
+            property bool closesPopups: true
             property point pressPos
             onPressed: mouse => {
                 tile.selectRequested()
+                if (closesPopups)
+                    tile.closePopups()
                 pressPos = Qt.point(mouse.x, mouse.y)
             }
             onPositionChanged: mouse => {
@@ -87,7 +108,10 @@ Item {
             wheelRotateEnabled: tile.wheelRotate
             lowBandwidth: tile.lowBw
             meterEnabled: tile.showMeter
-            onInteracted: tile.selectRequested()
+            onInteracted: {
+                tile.selectRequested()
+                tile.closePopups()
+            }
         }
 
         // Source name overlay (broadcast-style label, bottom center).
@@ -147,7 +171,17 @@ Item {
             MeterBar { height: parent.height; level: video.audioRight }
         }
 
-        HoverHandler { id: tileHover }
+        HoverHandler {
+            id: tileHover
+            // Leaving the tile closes its popup menus (click-away/move-away)
+            // and wakes the selection highlight while hovering.
+            onHoveredChanged: {
+                if (hovered)
+                    tile.highlightFaded = false
+                else
+                    tile.closePopups()
+            }
+        }
 
         component TileBtn: Rectangle {
             property string label
@@ -188,6 +222,7 @@ Item {
                 id: moveArea
                 anchors.fill: parent
                 cursorShape: Qt.SizeAllCursor
+                closesPopups: false
             }
 
             Text {
