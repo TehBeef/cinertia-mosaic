@@ -15,3 +15,6 @@ Thumbs.db
 
 # Tool logs
 aqtinstall.log
+
+# Companion module dependencies
+companion-module/**/node_modules/

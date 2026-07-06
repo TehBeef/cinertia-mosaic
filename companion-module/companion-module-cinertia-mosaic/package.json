@@ -1,0 +1,10 @@
+{
+    "name": "companion-module-cinertia-mosaic",
+    "version": "0.1.0",
+    "description": "Bitfocus Companion module for the Cinertia Mosaic NDI multiviewer",
+    "main": "main.js",
+    "license": "MIT",
+    "dependencies": {
+        "@companion-module/base": "^1.10.0"
+    }
+}
