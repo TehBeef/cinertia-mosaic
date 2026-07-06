@@ -40,12 +40,21 @@ back.
 
 - Sources on the network appear automatically (the list refreshes every
   second).
-- **Click a source to add it** to the canvas as a tile.
-- **Click it again to add another copy.** The same source can be on the
-  canvas many times — e.g. one wide camera shot with several tiles each
-  cropped to a different area. The blue badge shows how many copies are
-  up (● 3).
-- Remove a tile with the ✕ in its header (hover the tile to see it).
+- **Click a source to add it** to the canvas as a tile. **Click it again
+  to remove it.** The blue highlight shows which sources are on the
+  canvas.
+- You can also remove any tile with the ✕ in its header (hover the tile
+  to see it).
+
+### Duplicate sources (optional)
+Turn on **Settings → Allow duplicate sources** and every sidebar click
+adds **another copy** of that source instead of toggling it. The same
+source can then be on the canvas many times — e.g. one wide camera shot
+with several tiles each cropped to a different area. The blue badge
+shows how many copies are up (● 3). With duplicates on, tiles are
+removed only with their header ✕. Note that each copy is its own NDI
+connection — use the tile's Low bandwidth option on small crop tiles to
+keep network/CPU use down.
 
 ---
 
@@ -154,6 +163,7 @@ on launch — even after a crash or power loss.
 | Always on top | Float above other windows |
 | Rotate with Alt+scroll | Toggle wheel rotation |
 | Show tile names | Master switch for all tile labels |
+| Allow duplicate sources | Off (default): sidebar clicks toggle a source on/off. On: each click adds another copy of the source |
 | Keep display awake | Stops Windows blanking the screen (show days) |
 | Remote control + port | The Companion/Stream Deck TCP interface |
 | Tile spacing | Gap used by layouts; 0 = seamless |

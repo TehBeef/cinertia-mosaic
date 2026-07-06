@@ -91,6 +91,10 @@ ApplicationWindow {
     property int tileGap: 8
     // Master switch for all tile name labels.
     property bool showTileNames: true
+    // Off (default): sidebar clicks toggle a source on/off the canvas.
+    // On: every click adds another tile of the source, so one shot can be
+    // cropped to several regions.
+    property bool allowDuplicates: false
 
     // Any mouse movement wakes the selected tile's accent so the user can
     // always find the active tile by nudging the mouse. Wired to hover
@@ -244,10 +248,20 @@ ApplicationWindow {
         return count
     }
 
-    // The same source may be added multiple times — e.g. several tiles
-    // each cropped to a different region of one wide camera shot.
-    function addSource(name) {
-        tileModel.append({ name: name })
+    // Duplicates ON: every click adds another instance. Duplicates OFF:
+    // classic toggle — add if absent, otherwise remove every instance.
+    function sourceClicked(name) {
+        if (allowDuplicates) {
+            tileModel.append({ name: name })
+            return
+        }
+        const had = sourceCount(name) > 0
+        for (let i = tileModel.count - 1; i >= 0; i--) {
+            if (tileModel.get(i).name === name)
+                tileModel.remove(i)
+        }
+        if (!had)
+            tileModel.append({ name: name })
     }
 
     // ------------------------------------------------------- profiles
@@ -412,6 +426,7 @@ ApplicationWindow {
             wheelRotateOn: wheelRotateOn,
             tileGap: tileGap,
             showTileNames: showTileNames,
+            allowDuplicates: allowDuplicates,
             neverSleep: neverSleep,
             remoteEnabled: remoteEnabled,
             remotePort: remotePort,
@@ -444,6 +459,7 @@ ApplicationWindow {
                 if (s.tileGap !== undefined)
                     tileGap = s.tileGap
                 showTileNames = s.showTileNames !== false
+                allowDuplicates = s.allowDuplicates === true
                 neverSleep = s.neverSleep === true
                 remoteEnabled = s.remoteEnabled === true
                 if (s.remotePort !== undefined)
@@ -654,7 +670,9 @@ ApplicationWindow {
                 Text {
                     text: finder.sources.length === 0
                           ? "Searching the network…"
-                          : finder.sources.length + " found — click to add (again for another copy)"
+                          : finder.sources.length + (window.allowDuplicates
+                              ? " found — click to add (again for another copy)"
+                              : " found — click to add/remove")
                     color: "#8a8a90"
                     font.pixelSize: 11
                 }
@@ -711,7 +729,7 @@ ApplicationWindow {
                             // Exclusive grab: without this, taps aimed at
                             // overlays above (settings panel) also fire here.
                             gesturePolicy: TapHandler.ReleaseWithinBounds
-                            onTapped: window.addSource(parent.modelData)
+                            onTapped: window.sourceClicked(parent.modelData)
                         }
                     }
                 }
@@ -1348,6 +1366,11 @@ ApplicationWindow {
                 label: "Show tile names"
                 checked: window.showTileNames
                 onToggled: window.showTileNames = !window.showTileNames
+            }
+            CheckRow {
+                label: "Allow duplicate sources"
+                checked: window.allowDuplicates
+                onToggled: window.allowDuplicates = !window.allowDuplicates
             }
             CheckRow {
                 label: "Keep display awake"
