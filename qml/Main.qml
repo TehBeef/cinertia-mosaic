@@ -27,19 +27,6 @@ ApplicationWindow {
     // Master switch for all tile name labels.
     property bool showTileNames: true
 
-    // Any mouse movement in the window wakes the selected tile's accent
-    // so the user can always find the active tile by nudging the mouse.
-    Item {
-        anchors.fill: parent
-        z: -1
-        HoverHandler {
-            onPointChanged: {
-                if (canvas.selectedTile)
-                    canvas.selectedTile.wakeHighlight()
-            }
-        }
-    }
-
     // Display modes: 0 = windowed, 1 = fullscreen, 2 = windowless
     property int displayMode: 0
     property bool alwaysOnTop: false
@@ -1219,6 +1206,30 @@ ApplicationWindow {
                 color: "#5a5a60"
                 font.pixelSize: 10
                 wrapMode: Text.WordWrap
+            }
+        }
+    }
+
+    // Any mouse movement in the window wakes the selected tile's accent so
+    // the user can always find the active tile by nudging the mouse. Lives
+    // on top of everything (hover only reliably reaches front items) but
+    // is invisible, non-blocking, and ignores clicks.
+    Item {
+        anchors.fill: parent
+        z: 500
+        HoverHandler {
+            blocking: false
+            // Video repaints re-deliver hover every frame even when the
+            // mouse is still — only a real position change counts as
+            // activity, or the highlight would never fade.
+            property point lastPos: Qt.point(-1, -1)
+            onPointChanged: {
+                const p = point.position
+                if (p.x === lastPos.x && p.y === lastPos.y)
+                    return
+                lastPos = Qt.point(p.x, p.y)
+                if (canvas.selectedTile)
+                    canvas.selectedTile.wakeHighlight()
             }
         }
     }
