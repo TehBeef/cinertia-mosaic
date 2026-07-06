@@ -27,8 +27,21 @@ proxy stream for small tiles). All three stick with profiles and the
 session. The active profile also auto-saves every change now — the Save
 button is only for creating new profiles. About dialog (gear → About
 Mosaic…) carries the NDI trademark notice and ndi.video link.
-Still to come in Milestone 6: nothing — then Milestone 7 (installer).
-Later: hotkeys and Stream Deck/Companion remote control.
+**Milestone 7 (awaiting Max's test):** the installer.
+`dist\Mosaic-Setup-0.1.0.exe` — a single setup exe built with Inno Setup.
+Installs to Program Files with the Qt runtime and the NDI DLL bundled in
+the app folder (per the NDI license), Start Menu entry, optional desktop
+icon, proper app icon and version info, no debug console window.
+Rebuild it any time with `scripts\stage-deploy.ps1`.
+Later: hotkeys, Stream Deck/Companion remote control, never-sleep
+setting, tile renaming (all in the CLAUDE.md roadmap).
+
+## New files for the installer
+| File / folder | What it is |
+|---|---|
+| `resources/mosaic.ico` + `mosaic.rc` | The app icon and Windows version info baked into Mosaic.exe. |
+| `installer/mosaic.iss` | The Inno Setup recipe for the installer. |
+| `scripts/stage-deploy.ps1` | One command that rebuilds, stages a clean app folder (`deploy/`), and produces the installer in `dist/`. |
 (Milestones 1–5 signed off. Rotation is Alt+scroll — Ctrl is snapping;
 pinch = zoom.)
 

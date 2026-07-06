@@ -28,6 +28,9 @@ endif()
 qt_add_executable(Mosaic
     src/main.cpp
 )
+if(WIN32)
+    target_sources(Mosaic PRIVATE resources/mosaic.rc)
+endif()
 
 qt_add_qml_module(Mosaic
     URI Mosaic
@@ -55,6 +58,6 @@ if(WIN32)
     )
 endif()
 
-# WIN32_EXECUTABLE hides the console window behind the app on Windows.
-# Keep it off for now so we can see debug output; flip on for release builds.
-set_target_properties(Mosaic PROPERTIES WIN32_EXECUTABLE FALSE)
+# WIN32_EXECUTABLE hides the console window on Windows. Debug output can
+# still be captured by redirecting stderr when launching from a shell.
+set_target_properties(Mosaic PROPERTIES WIN32_EXECUTABLE TRUE)

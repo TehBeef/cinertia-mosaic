@@ -62,6 +62,8 @@ A professional NDI multiviewer for the AV/broadcast industry. It receives multip
    - Max (2026-07-06): **profiles** — named setups bundling layout + sources + per-tile views that can be switched instantly when you need a different view of the production. Design the layout save/load around this concept.
    - Max (2026-07-06): **hotkeys** — profile switching (and other key actions) bindable to keyboard shortcuts.
    - Max (2026-07-06): **Stream Deck / Bitfocus Companion compatibility** — a remote-control interface (e.g. TCP or HTTP commands Companion can send) to switch profiles/layouts from a Stream Deck. Likely lands after v1 installer unless promoted; keep the profile system designed so remote triggering is easy to bolt on.
+   - Max (2026-07-06): **never-sleep option** in settings — keep the display awake while the app runs (multiviewers run unattended on show days; Windows must not blank the monitor).
+   - Max (2026-07-06): **rename tiles** — per-tile custom label overriding the source name in the overlay/header (e.g. "CAM 1 — STAGE LEFT" instead of the NDI source name).
 7. **Installer** — Inno Setup .exe installer, version numbering, app icon.
 8. **(Future) macOS port** — do not build now, but never introduce Windows-only dependencies without flagging it to me.
 
