@@ -317,6 +317,12 @@ void NdiVideoItem::setWheelRotateEnabled(bool enabled)
 void NdiVideoItem::mousePressEvent(QMouseEvent *event)
 {
     emit interacted();
+    // At fit zoom there is nothing to pan — let the press fall through so
+    // the tile underneath can use the drag to move itself.
+    if (m_zoom <= 1.001) {
+        event->ignore();
+        return;
+    }
     m_panning = true;
     m_lastMousePos = event->position();
     setCursor(Qt::ClosedHandCursor);

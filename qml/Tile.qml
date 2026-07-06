@@ -30,6 +30,34 @@ Item {
         color: "#101013"
         border.width: 1
         border.color: tile.selected ? "#3d7eff" : "#26262b"
+        clip: true // video must never draw outside its tile
+
+        // Shared move-the-tile drag logic. The body instance sits under the
+        // video: it receives drags when the video is at fit zoom (nothing
+        // to pan), so grabbing a tile anywhere moves it.
+        component MoveArea: MouseArea {
+            property point pressPos
+            onPressed: mouse => {
+                tile.selectRequested()
+                pressPos = Qt.point(mouse.x, mouse.y)
+            }
+            onPositionChanged: mouse => {
+                if (!pressed)
+                    return
+                let nx = tile.x + mouse.x - pressPos.x
+                let ny = tile.y + mouse.y - pressPos.y
+                if (tile.snapEnabled || (mouse.modifiers & Qt.ControlModifier)) {
+                    nx = tile.snap(nx)
+                    ny = tile.snap(ny)
+                }
+                tile.x = Math.max(0, Math.min(nx, tile.parent.width - tile.width))
+                tile.y = Math.max(0, Math.min(ny, tile.parent.height - tile.height))
+            }
+        }
+
+        MoveArea {
+            anchors.fill: parent
+        }
 
         VideoView {
             id: video
@@ -75,27 +103,10 @@ Item {
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
 
-            MouseArea {
+            MoveArea {
                 id: moveArea
                 anchors.fill: parent
                 cursorShape: Qt.SizeAllCursor
-                property point pressPos
-                onPressed: mouse => {
-                    tile.selectRequested()
-                    pressPos = Qt.point(mouse.x, mouse.y)
-                }
-                onPositionChanged: mouse => {
-                    if (!pressed)
-                        return
-                    let nx = tile.x + mouse.x - pressPos.x
-                    let ny = tile.y + mouse.y - pressPos.y
-                    if (tile.snapEnabled || (mouse.modifiers & Qt.ControlModifier)) {
-                        nx = tile.snap(nx)
-                        ny = tile.snap(ny)
-                    }
-                    tile.x = Math.max(0, Math.min(nx, tile.parent.width - tile.width))
-                    tile.y = Math.max(0, Math.min(ny, tile.parent.height - tile.height))
-                }
             }
 
             Text {

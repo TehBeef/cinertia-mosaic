@@ -319,7 +319,7 @@ ApplicationWindow {
                 }
                 Text {
                     anchors.centerIn: parent
-                    text: "Scroll = zoom · Drag = pan · Alt+scroll = rotate · Header = move tile · Corners = resize · Ctrl = snap"
+                    text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Alt+scroll = rotate · Corners = resize · Ctrl = snap"
                     color: "#5a5a60"
                     font.pixelSize: 10
                     visible: canvasHover.hovered
