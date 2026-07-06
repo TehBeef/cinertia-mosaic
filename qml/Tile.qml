@@ -12,6 +12,7 @@ Item {
     property bool snapEnabled: false
     property int gridSize: 16
     property bool cropMode: false
+    property bool wheelRotate: true
     readonly property string status: video.status
 
     signal closeRequested()
@@ -64,6 +65,7 @@ Item {
             anchors.fill: parent
             anchors.margins: 1
             sourceName: tile.sourceName
+            wheelRotateEnabled: tile.wheelRotate
             onInteracted: tile.selectRequested()
         }
 
@@ -181,12 +183,6 @@ Item {
                 border.width: 1
                 border.color: "#3d7eff"
             }
-        }
-
-        Shortcut {
-            sequence: "Escape"
-            enabled: tile.cropMode
-            onActivated: tile.cropMode = false
         }
 
         // Corner resize grips (invisible, cursor changes on hover).

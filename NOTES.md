@@ -12,14 +12,17 @@ approval from the NDI team, so everything internal uses this codename for now.
 Easy to rename later.
 
 ## Current status
-**Milestone 4 — multi-tile canvas.** Multiple sources at once, each in its
-own tile. Click sources in the sidebar to add/remove them. Tiles move by
-dragging their hover header, resize from the corners, snap to a grid when
-Ctrl is held (or the Snap toggle is on), and preset layouts (2×2, 3×3,
-1+side) arrange everything in one click. Each tile keeps its own
-zoom/pan/rotate/crop from Milestone 3. Awaiting Max's test.
-(Milestones 1–3 are complete and signed off. Rotation is Alt+scroll —
-Ctrl is reserved for snapping, and trackpad pinch = zoom.)
+**Milestone 5 — display modes.** Settings panel (gear icon in the sidebar)
+switches between Windowed / Fullscreen (with monitor picker) / Windowless
+(frameless), plus Always-on-top and the Alt+scroll rotation toggle.
+The sidebar collapses with the « button and auto-collapses in
+fullscreen/windowless; hover the left screen edge to bring it back.
+Esc returns to windowed. In windowless mode, drag empty canvas to move
+the window. Awaiting Max's test.
+(Milestones 1–4 are complete and signed off. Rotation is Alt+scroll —
+Ctrl is reserved for snapping, and trackpad pinch = zoom. Still to come
+in Milestone 6 per Max: more presets, saved/named layouts, restore last
+session, premade broadcast multiview layouts.)
 
 ## Files in the project
 
