@@ -13,6 +13,7 @@ Item {
     property int gridSize: 16
     property bool cropMode: false
     property bool wheelRotate: true
+    property bool sizeOpen: false
     readonly property string status: video.status
 
     signal closeRequested()
@@ -102,7 +103,7 @@ Item {
             anchors.margins: 1
             height: 28
             color: "#1a1a1ee6"
-            opacity: (tileHover.hovered || moveArea.pressed) ? 1 : 0
+            opacity: (tileHover.hovered || moveArea.pressed || tile.sizeOpen) ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
 
@@ -139,9 +140,86 @@ Item {
                 }
                 TileBtn {
                     label: "Fit"
-                    onActivated: { tile.cropMode = false; video.resetView() }
+                    onActivated: {
+                        // Reset the view AND shape the tile to the video so
+                        // the picture fills the frame with no black bars.
+                        tile.cropMode = false
+                        video.resetView()
+                        const vs = video.videoSize
+                        if (vs.width > 0 && vs.height > 0) {
+                            const nh = Math.max(tile.minH,
+                                Math.round(tile.width * vs.height / vs.width))
+                            tile.height = nh
+                        }
+                    }
+                }
+                TileBtn {
+                    label: "Size"
+                    active: tile.sizeOpen
+                    onActivated: tile.sizeOpen = !tile.sizeOpen
                 }
                 TileBtn { label: "✕"; fontSize: 14; onActivated: tile.closeRequested() }
+            }
+        }
+
+        // Custom tile size entry (opens from the Size button).
+        component NumBox: Rectangle {
+            property alias text: input.text
+            property int value: 0
+            width: 56
+            height: 22
+            radius: 2
+            color: "#101013"
+            border.width: 1
+            border.color: input.activeFocus ? "#3d7eff" : "#2a2a2e"
+            onValueChanged: input.text = value
+
+            TextInput {
+                id: input
+                anchors.fill: parent
+                anchors.margins: 3
+                color: "#d8d8dc"
+                font.pixelSize: 12
+                horizontalAlignment: TextInput.AlignHCenter
+                validator: IntValidator { bottom: 1; top: 16384 }
+                selectByMouse: true
+                text: parent.value
+            }
+        }
+
+        Rectangle {
+            visible: tile.sizeOpen
+            anchors.top: header.bottom
+            anchors.right: parent.right
+            anchors.margins: 4
+            width: sizeRow.width + 16
+            height: 32
+            radius: 3
+            color: "#1a1a1e"
+            border.width: 1
+            border.color: "#2a2a2e"
+
+            Row {
+                id: sizeRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                NumBox { id: wBox; value: Math.round(tile.width) }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "×"
+                    color: "#8a8a90"
+                    font.pixelSize: 12
+                }
+                NumBox { id: hBox; value: Math.round(tile.height) }
+                TileBtn {
+                    label: "Set"
+                    onActivated: {
+                        tile.width = Math.max(tile.minW, parseInt(wBox.text) || tile.width)
+                        tile.height = Math.max(tile.minH, parseInt(hBox.text) || tile.height)
+                        tile.sizeOpen = false
+                    }
+                }
             }
         }
 

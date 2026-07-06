@@ -48,6 +48,7 @@ class NdiVideoItem : public QQuickItem
     QML_NAMED_ELEMENT(VideoView)
     Q_PROPERTY(QString sourceName READ sourceName WRITE setSourceName NOTIFY sourceNameChanged)
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
+    Q_PROPERTY(QSize videoSize READ videoSize NOTIFY videoSizeChanged)
     Q_PROPERTY(qreal zoomLevel READ zoomLevel NOTIFY viewChanged)
     Q_PROPERTY(qreal viewRotation READ viewRotation NOTIFY viewChanged)
     Q_PROPERTY(bool cropped READ cropped NOTIFY viewChanged)
@@ -62,6 +63,7 @@ public:
     QString sourceName() const { return m_sourceName; }
     void setSourceName(const QString &name);
     QString status() const { return m_status; }
+    QSize videoSize() const { return m_videoSize; }
     qreal zoomLevel() const { return m_zoom; }
     qreal viewRotation() const { return m_rotation; }
     bool cropped() const { return m_crop != QRectF(0, 0, 1, 1); }
@@ -79,6 +81,7 @@ signals:
     void statusChanged();
     void viewChanged();
     void wheelRotateEnabledChanged();
+    void videoSizeChanged();
     void interacted(); // any click/scroll on the video — used to select tiles
 
 protected:
@@ -105,6 +108,7 @@ private:
     QImage m_pendingFrame;
     bool m_frameDirty = false;
     QSize m_textureSize;
+    QSize m_videoSize;
 
     qreal m_zoom = 1.0;
     QPointF m_pan;

@@ -362,6 +362,10 @@ void NdiVideoItem::onFrame(const QImage &frame)
 {
     m_pendingFrame = frame;
     m_frameDirty = true;
+    if (frame.size() != m_videoSize) {
+        m_videoSize = frame.size();
+        emit videoSizeChanged();
+    }
     update();
 }
 

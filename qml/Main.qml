@@ -44,20 +44,32 @@ ApplicationWindow {
         }
     }
 
+    // Windows recreates the native window when its style flags change and
+    // can reset the size in the process — so remember the last windowed
+    // geometry and put it back after every mode switch.
+    property rect savedGeom: Qt.rect(0, 0, 0, 0)
+
     function applyDisplayMode() {
         const onTop = alwaysOnTop ? Qt.WindowStaysOnTopHint : 0
+        if (window.visibility !== Window.FullScreen && window.width > 200)
+            savedGeom = Qt.rect(window.x, window.y, window.width, window.height)
+
         if (displayMode === 1) {
             window.flags = Qt.Window | onTop
             const screens = Qt.application.screens
             window.screen = screens[Math.min(fsScreenIndex, screens.length - 1)]
             window.visibility = Window.FullScreen
-        } else if (displayMode === 2) {
-            window.visibility = Window.Windowed
-            window.flags = Qt.Window | Qt.FramelessWindowHint | onTop
-            window.visible = true
         } else {
             window.visibility = Window.Windowed
-            window.flags = Qt.Window | onTop
+            window.flags = displayMode === 2
+                ? Qt.Window | Qt.FramelessWindowHint | onTop
+                : Qt.Window | onTop
+            if (savedGeom.width > 200) {
+                window.x = savedGeom.x
+                window.y = savedGeom.y
+                window.width = savedGeom.width
+                window.height = savedGeom.height
+            }
             window.visible = true
         }
     }
@@ -453,6 +465,29 @@ ApplicationWindow {
         }
     }
 
+    // Frameless windows have no OS resize borders — provide our own edges
+    // and corners in windowless mode via startSystemResize.
+    component ResizeEdge: MouseArea {
+        property int edges
+        z: 200
+        onPressed: window.startSystemResize(edges)
+    }
+
+    Item {
+        anchors.fill: parent
+        visible: window.displayMode === 2
+        z: 200
+
+        ResizeEdge { x: 0; y: 10; width: 7; height: parent.height - 20; edges: Qt.LeftEdge; cursorShape: Qt.SizeHorCursor }
+        ResizeEdge { x: parent.width - 7; y: 10; width: 7; height: parent.height - 20; edges: Qt.RightEdge; cursorShape: Qt.SizeHorCursor }
+        ResizeEdge { x: 10; y: 0; width: parent.width - 20; height: 7; edges: Qt.TopEdge; cursorShape: Qt.SizeVerCursor }
+        ResizeEdge { x: 10; y: parent.height - 7; width: parent.width - 20; height: 7; edges: Qt.BottomEdge; cursorShape: Qt.SizeVerCursor }
+        ResizeEdge { x: 0; y: 0; width: 12; height: 12; edges: Qt.LeftEdge | Qt.TopEdge; cursorShape: Qt.SizeFDiagCursor }
+        ResizeEdge { x: parent.width - 12; y: 0; width: 12; height: 12; edges: Qt.RightEdge | Qt.TopEdge; cursorShape: Qt.SizeBDiagCursor }
+        ResizeEdge { x: 0; y: parent.height - 12; width: 12; height: 12; edges: Qt.LeftEdge | Qt.BottomEdge; cursorShape: Qt.SizeBDiagCursor }
+        ResizeEdge { x: parent.width - 12; y: parent.height - 12; width: 12; height: 12; edges: Qt.RightEdge | Qt.BottomEdge; cursorShape: Qt.SizeFDiagCursor }
+    }
+
     // Left-edge hover strip: brings the collapsed sidebar back.
     MouseArea {
         width: 24
@@ -596,6 +631,57 @@ ApplicationWindow {
                         label: (index + 1) + ": " + modelData.name
                         active: window.fsScreenIndex === index
                         onActivated: window.fsScreenIndex = index
+                    }
+                }
+            }
+
+            Text {
+                visible: window.displayMode !== 1
+                text: "WINDOW SIZE"
+                color: "#5a5a60"
+                font.pixelSize: 10
+            }
+            Row {
+                visible: window.displayMode !== 1
+                spacing: 6
+
+                component NumBox: Rectangle {
+                    property alias text: numInput.text
+                    property int value: 0
+                    width: 62
+                    height: 24
+                    radius: 2
+                    color: "#101013"
+                    border.width: 1
+                    border.color: numInput.activeFocus ? "#3d7eff" : "#2a2a2e"
+                    onValueChanged: numInput.text = value
+
+                    TextInput {
+                        id: numInput
+                        anchors.fill: parent
+                        anchors.margins: 3
+                        color: "#d8d8dc"
+                        font.pixelSize: 12
+                        horizontalAlignment: TextInput.AlignHCenter
+                        validator: IntValidator { bottom: 1; top: 16384 }
+                        selectByMouse: true
+                        text: parent.value
+                    }
+                }
+
+                NumBox { id: winW; value: window.width }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "×"
+                    color: "#8a8a90"
+                    font.pixelSize: 12
+                }
+                NumBox { id: winH; value: window.height }
+                ToolBtn {
+                    label: "Set"
+                    onActivated: {
+                        window.width = Math.max(window.minimumWidth, parseInt(winW.text) || window.width)
+                        window.height = Math.max(window.minimumHeight, parseInt(winH.text) || window.height)
                     }
                 }
             }
