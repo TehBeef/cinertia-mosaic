@@ -91,6 +91,21 @@ ApplicationWindow {
     property int tileGap: 8
     // Master switch for all tile name labels.
     property bool showTileNames: true
+
+    // Any mouse movement wakes the selected tile's accent so the user can
+    // always find the active tile by nudging the mouse. Wired to hover
+    // handlers on ANCESTOR items (canvas, sidebar) — a full-window overlay
+    // handler would steal hover from tile headers. Video repaints
+    // re-deliver hover with the mouse still, so only genuine position
+    // changes count, or the highlight would never fade.
+    property point lastWakePos: Qt.point(-1, -1)
+    function mouseActivity(pos) {
+        if (pos.x === lastWakePos.x && pos.y === lastWakePos.y)
+            return
+        lastWakePos = Qt.point(pos.x, pos.y)
+        if (canvas.selectedTile)
+            canvas.selectedTile.wakeHighlight()
+    }
     // Keep the display awake (show-day mode).
     property bool neverSleep: false
     // TCP remote control for Stream Deck / Bitfocus Companion.
@@ -574,6 +589,10 @@ ApplicationWindow {
             clip: true
             Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
+            HoverHandler {
+                onPointChanged: window.mouseActivity(point.position)
+            }
+
             Column {
                 width: 256
                 anchors.top: parent.top
@@ -901,7 +920,40 @@ ApplicationWindow {
                 prevSize = Qt.size(width, height)
             }
 
-            HoverHandler { id: canvasHover }
+            // Track which tile is topmost under the cursor: only that tile
+            // shows its hover UI, so with overlapping tiles the buttons you
+            // see are always the buttons you hit.
+            property var hoverTile: null
+
+            function updateHoverTile(pos) {
+                // childAt ignores z-order, so find the topmost tile
+                // manually: highest z wins, later creation breaks ties
+                // (matching the scene graph's paint order).
+                let best = null
+                for (let i = 0; i < tileRepeater.count; i++) {
+                    const it = tileRepeater.itemAt(i)
+                    if (!it)
+                        continue
+                    if (pos.x >= it.x && pos.x <= it.x + it.width
+                            && pos.y >= it.y && pos.y <= it.y + it.height) {
+                        if (!best || it.z >= best.z)
+                            best = it
+                    }
+                }
+                hoverTile = best
+            }
+
+            HoverHandler {
+                id: canvasHover
+                onPointChanged: {
+                    window.mouseActivity(point.position)
+                    canvas.updateHoverTile(point.position)
+                }
+                onHoveredChanged: {
+                    if (!hovered)
+                        canvas.hoverTile = null
+                }
+            }
 
             // Click empty canvas to deselect and close any open tile menus.
             TapHandler {
@@ -983,6 +1035,7 @@ ApplicationWindow {
                         globalShowName: window.showTileNames
                         gridSize: 16
                         selected: canvas.selectedTile === this
+                        hoverTop: canvas.hoverTile === this
                         onSnapDragActiveChanged:
                             canvas.snapDragCount += snapDragActive ? 1 : -1
                         Component.onCompleted: {
@@ -1003,6 +1056,8 @@ ApplicationWindow {
                         Component.onDestruction: {
                             if (snapDragActive)
                                 canvas.snapDragCount--
+                            if (canvas.hoverTile === this)
+                                canvas.hoverTile = null
                         }
                     }
                 }
@@ -1377,30 +1432,6 @@ ApplicationWindow {
                 color: "#5a5a60"
                 font.pixelSize: 10
                 wrapMode: Text.WordWrap
-            }
-        }
-    }
-
-    // Any mouse movement in the window wakes the selected tile's accent so
-    // the user can always find the active tile by nudging the mouse. Lives
-    // on top of everything (hover only reliably reaches front items) but
-    // is invisible, non-blocking, and ignores clicks.
-    Item {
-        anchors.fill: parent
-        z: 500
-        HoverHandler {
-            blocking: false
-            // Video repaints re-deliver hover every frame even when the
-            // mouse is still — only a real position change counts as
-            // activity, or the highlight would never fade.
-            property point lastPos: Qt.point(-1, -1)
-            onPointChanged: {
-                const p = point.position
-                if (p.x === lastPos.x && p.y === lastPos.y)
-                    return
-                lastPos = Qt.point(p.x, p.y)
-                if (canvas.selectedTile)
-                    canvas.selectedTile.wakeHighlight()
             }
         }
     }

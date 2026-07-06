@@ -15,6 +15,17 @@ Item {
     property bool wheelRotate: true
     property bool sizeOpen: false
     property bool optsOpen: false
+    // True only when this tile is the TOPMOST one under the cursor (set
+    // by the canvas). With overlapping tiles — e.g. duplicates of one
+    // source — only the tile that would receive the click shows its
+    // hover UI, so buttons always belong to the tile you can actually hit.
+    property bool hoverTop: false
+    onHoverTopChanged: {
+        if (hoverTop)
+            highlightFaded = false
+        else
+            closePopups()
+    }
     // Per-tile options (persisted with profiles and the session).
     property bool showName: true
     property bool showMeter: false
@@ -183,14 +194,6 @@ Item {
             MeterBar { height: parent.height; level: video.audioRight }
         }
 
-        HoverHandler {
-            id: tileHover
-            // Leaving the tile closes its popup menus (click-away/move-away).
-            onHoveredChanged: {
-                if (!hovered)
-                    tile.closePopups()
-            }
-        }
 
         component TileBtn: Rectangle {
             property string label
@@ -223,7 +226,7 @@ Item {
             anchors.margins: 1
             height: 28
             color: "#1a1a1ee6"
-            opacity: (tileHover.hovered || moveArea.pressed || tile.sizeOpen || tile.optsOpen) ? 1 : 0
+            opacity: (tile.hoverTop || moveArea.pressed || tile.sizeOpen || tile.optsOpen) ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
 
@@ -249,7 +252,9 @@ Item {
                 id: controls
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
-                anchors.rightMargin: 4
+                // Clear of the invisible 14px corner resize grip, which sits
+                // above the header and would otherwise swallow ✕ clicks.
+                anchors.rightMargin: 18
                 spacing: 2
 
                 TileBtn { label: "⟲"; fontSize: 15; onActivated: video.rotateBy(-90) }
