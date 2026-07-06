@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.5 REQUIRED COMPONENTS Quick)
 
 qt_standard_project_setup(REQUIRES 6.5)
+qt_policy(SET QTP0004 NEW)
 
 qt_add_executable(Mosaic
     src/main.cpp

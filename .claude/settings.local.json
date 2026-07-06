@@ -9,7 +9,15 @@
       "PowerShell(python -m pip install --user -U aqtinstall; python -m aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 -O \"C:\\\\Users\\\\Max\\\\Qt\"; \"=== QT DONE \\(exit $LASTEXITCODE\\) ===\")",
       "PowerShell($out = \"C:\\\\Users\\\\Max\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Max-Documents-Cinertia-Systems-Programs-NDI-Multiviewer\\\\8cfa9b4c-a849-4774-b535-6c60507edadd\\\\scratchpad\\\\NDI_6_SDK.exe\"; curl.exe -L -f -o $out \"https://downloads.ndi.tv/SDK/NDI_SDK/NDI%206%20SDK.exe\"; \"=== NDI SDK DOWNLOAD DONE \\(exit $LASTEXITCODE\\) ===\"; if \\(Test-Path $out\\) { \"Size: $\\(\\(Get-Item $out\\).Length / 1MB\\) MB\" })",
       "PowerShell($exe = \"C:\\\\Users\\\\Max\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Max-Documents-Cinertia-Systems-Programs-NDI-Multiviewer\\\\8cfa9b4c-a849-4774-b535-6c60507edadd\\\\scratchpad\\\\NDI_6_SDK.exe\"; $p = Start-Process -FilePath $exe -ArgumentList \"/VERYSILENT\",\"/SUPPRESSMSGBOXES\",\"/NORESTART\" -PassThru -Wait; \"Installer exit code: $\\($p.ExitCode\\)\"; Get-ChildItem \"C:\\\\Program Files\\\\NDI\" -Directory | Select-Object -ExpandProperty Name)",
-      "PowerShell(git add -A)"
+      "PowerShell(git add -A)",
+      "PowerShell(git config user.name \"Max\")",
+      "PowerShell(git config user.email \"max@floridagrip.com\")",
+      "PowerShell(git rm --cached aqtinstall.log)",
+      "PowerShell(git add .gitignore)",
+      "PowerShell(& \"C:\\\\Program Files\\\\CMake\\\\bin\\\\cmake.exe\" -S \"C:\\\\Users\\\\Max\\\\Documents\\\\Cinertia Systems\\\\Programs\\\\NDI Multiviewer\" -B \"C:\\\\Users\\\\Max\\\\Documents\\\\Cinertia Systems\\\\Programs\\\\NDI Multiviewer\\\\build\" -G \"Visual Studio 17 2022\" -A x64 -DCMAKE_PREFIX_PATH=\"C:\\\\Users\\\\Max\\\\Qt\\\\6.8.3\\\\msvc2022_64\")",
+      "PowerShell(& \"C:\\\\Program Files\\\\CMake\\\\bin\\\\cmake.exe\" --build \"C:\\\\Users\\\\Max\\\\Documents\\\\Cinertia Systems\\\\Programs\\\\NDI Multiviewer\\\\build\" --config Release)",
+      "PowerShell(& \"C:\\\\Users\\\\Max\\\\Qt\\\\6.8.3\\\\msvc2022_64\\\\bin\\\\windeployqt.exe\" --release --qmldir \"C:\\\\Users\\\\Max\\\\Documents\\\\Cinertia Systems\\\\Programs\\\\NDI Multiviewer\\\\qml\" \"C:\\\\Users\\\\Max\\\\Documents\\\\Cinertia Systems\\\\Programs\\\\NDI Multiviewer\\\\build\\\\Release\\\\Mosaic.exe\" | Select-Object -Last 3; \"=== deploy exit: $LASTEXITCODE ===\")",
+      "PowerShell(Start-Process -FilePath \"C:\\\\Users\\\\Max\\\\Documents\\\\Cinertia Systems\\\\Programs\\\\NDI Multiviewer\\\\build\\\\Release\\\\Mosaic.exe\"; Start-Sleep -Seconds 4; $p = Get-Process -Name Mosaic -ErrorAction SilentlyContinue; if \\($p\\) { \"Mosaic is RUNNING \\(PID $\\($p.Id\\), window title: '$\\($p.MainWindowTitle\\)'\\)\" } else { \"Mosaic exited or failed to start\" })"
     ]
   }
 }
