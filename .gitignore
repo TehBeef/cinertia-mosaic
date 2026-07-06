@@ -1,0 +1,12 @@
+# Build output
+build/
+out/
+
+# IDE / editor
+.vs/
+.vscode/
+*.user
+
+# Windows
+desktop.ini
+Thumbs.db

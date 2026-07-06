@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(try { \\(Get-Command cmake -ErrorAction Stop\\).Source; cmake --version | Select-Object -First 1 } catch { \"cmake: NOT FOUND in PATH\" })",
+      "PowerShell($paths = @\\(\"C:\\\\Qt\", \"$env:LOCALAPPDATA\\\\Qt\", \"C:\\\\Program Files\\\\Qt\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { \"FOUND: $p\"; Get-ChildItem $p | Select-Object -ExpandProperty Name } else { \"not found: $p\" } })",
+      "PowerShell($paths = @\\(\"C:\\\\Program Files\\\\NDI\", \"C:\\\\Program Files\\\\NewTek\", \"C:\\\\Program Files \\(x86\\)\\\\NDI\", \"C:\\\\Program Files \\(x86\\)\\\\NewTek\", \"$env:NDI_SDK_DIR\"\\); foreach \\($p in $paths\\) { if \\($p -and \\(Test-Path $p\\)\\) { \"FOUND: $p\"; Get-ChildItem $p | Select-Object -ExpandProperty Name } }; if \\($env:NDI_SDK_DIR\\) { \"NDI_SDK_DIR env var: $env:NDI_SDK_DIR\" } else { \"NDI_SDK_DIR env var not set\" })",
+      "PowerShell(\\([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent\\(\\)\\).IsInRole\\([Security.Principal.WindowsBuiltInRole]::Administrator\\))",
+      "PowerShell(winget install --id Kitware.CMake -e --accept-source-agreements --accept-package-agreements --disable-interactivity; \"=== CMAKE DONE \\(exit $LASTEXITCODE\\) ===\"; winget install --id Microsoft.VisualStudio.2022.BuildTools -e --accept-source-agreements --accept-package-agreements --disable-interactivity --override \"--quiet --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended\"; \"=== VS BUILD TOOLS DONE \\(exit $LASTEXITCODE\\) ===\")",
+      "PowerShell(python -m pip install --user -U aqtinstall; python -m aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 -O \"C:\\\\Users\\\\Max\\\\Qt\"; \"=== QT DONE \\(exit $LASTEXITCODE\\) ===\")",
+      "PowerShell($out = \"C:\\\\Users\\\\Max\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Max-Documents-Cinertia-Systems-Programs-NDI-Multiviewer\\\\8cfa9b4c-a849-4774-b535-6c60507edadd\\\\scratchpad\\\\NDI_6_SDK.exe\"; curl.exe -L -f -o $out \"https://downloads.ndi.tv/SDK/NDI_SDK/NDI%206%20SDK.exe\"; \"=== NDI SDK DOWNLOAD DONE \\(exit $LASTEXITCODE\\) ===\"; if \\(Test-Path $out\\) { \"Size: $\\(\\(Get-Item $out\\).Length / 1MB\\) MB\" })",
+      "PowerShell($exe = \"C:\\\\Users\\\\Max\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Max-Documents-Cinertia-Systems-Programs-NDI-Multiviewer\\\\8cfa9b4c-a849-4774-b535-6c60507edadd\\\\scratchpad\\\\NDI_6_SDK.exe\"; $p = Start-Process -FilePath $exe -ArgumentList \"/VERYSILENT\",\"/SUPPRESSMSGBOXES\",\"/NORESTART\" -PassThru -Wait; \"Installer exit code: $\\($p.ExitCode\\)\"; Get-ChildItem \"C:\\\\Program Files\\\\NDI\" -Directory | Select-Object -ExpandProperty Name)",
+      "PowerShell(git add -A)"
+    ]
+  }
+}
