@@ -1,10 +1,24 @@
 #include "NdiVideoItem.h"
 
+#include <QMouseEvent>
 #include <QQuickWindow>
 #include <QSGSimpleTextureNode>
+#include <QSGTransformNode>
 #include <QTimer>
+#include <QTransform>
+#include <QWheelEvent>
 
 #include <Processing.NDI.Lib.h>
+
+#include <cmath>
+
+namespace {
+constexpr qreal kMinZoom = 0.1;
+constexpr qreal kMaxZoom = 32.0;
+constexpr qreal kZoomStepFactor = 1.15; // per wheel notch
+constexpr qreal kRotateStepDeg = 2.0;   // per wheel notch with Ctrl
+constexpr qreal kMinCropSize = 0.01;    // normalized
+}
 
 // ---------------------------------------------------------------- worker
 
@@ -120,6 +134,7 @@ void NdiReceiveWorker::setStatus(const QString &status)
 NdiVideoItem::NdiVideoItem()
 {
     setFlag(ItemHasContents, true);
+    setAcceptedMouseButtons(Qt::LeftButton);
 
     m_worker = new NdiReceiveWorker;
     m_worker->moveToThread(&m_thread);
@@ -153,12 +168,175 @@ void NdiVideoItem::setSourceName(const QString &name)
             m_worker, [worker = m_worker, name] { worker->start(name); });
     }
 
-    // Drop the last frame of the previous source.
+    // Drop the last frame of the previous source and start the view fresh.
     m_pendingFrame = QImage();
     m_frameDirty = true;
-    update();
+    resetView();
 
     emit sourceNameChanged();
+}
+
+void NdiVideoItem::resetView()
+{
+    m_zoom = 1.0;
+    m_pan = QPointF();
+    m_rotation = 0.0;
+    m_crop = QRectF(0, 0, 1, 1);
+    viewUpdated();
+}
+
+void NdiVideoItem::resetZoomPan()
+{
+    m_zoom = 1.0;
+    m_pan = QPointF();
+    viewUpdated();
+}
+
+void NdiVideoItem::rotateBy(qreal degrees)
+{
+    m_rotation = std::fmod(m_rotation + degrees, 360.0);
+    viewUpdated();
+}
+
+void NdiVideoItem::applyCropFromItemRect(const QRectF &itemRect)
+{
+    const QRectF fit = fitRect();
+    if (fit.isEmpty() || itemRect.isEmpty())
+        return;
+
+    // Item coords -> quad coords at zoom 1 (bounding box if rotated),
+    // then -> normalized position inside the currently displayed region,
+    // then composed with the existing crop so crops stack naturally.
+    const QRectF base = viewTransform().inverted().mapRect(itemRect);
+    const qreal nx = (base.x() - fit.x()) / fit.width();
+    const qreal ny = (base.y() - fit.y()) / fit.height();
+    const qreal nw = base.width() / fit.width();
+    const qreal nh = base.height() / fit.height();
+
+    QRectF crop(m_crop.x() + nx * m_crop.width(),
+                m_crop.y() + ny * m_crop.height(),
+                nw * m_crop.width(),
+                nh * m_crop.height());
+    crop = crop.intersected(QRectF(0, 0, 1, 1));
+    if (crop.width() < kMinCropSize || crop.height() < kMinCropSize)
+        return;
+
+    m_crop = crop;
+    m_zoom = 1.0;
+    m_pan = QPointF();
+    viewUpdated();
+}
+
+void NdiVideoItem::clearCrop()
+{
+    m_crop = QRectF(0, 0, 1, 1);
+    m_zoom = 1.0;
+    m_pan = QPointF();
+    viewUpdated();
+}
+
+void NdiVideoItem::viewUpdated()
+{
+    emit viewChanged();
+    update();
+}
+
+QRectF NdiVideoItem::fitRect() const
+{
+    if (m_textureSize.isEmpty())
+        return QRectF(0, 0, width(), height());
+
+    const QSizeF content(m_textureSize.width() * m_crop.width(),
+                         m_textureSize.height() * m_crop.height());
+    const qreal scale = qMin(width() / content.width(),
+                             height() / content.height());
+    const qreal w = content.width() * scale;
+    const qreal h = content.height() * scale;
+    return QRectF((width() - w) / 2, (height() - h) / 2, w, h);
+}
+
+QTransform NdiVideoItem::viewTransform() const
+{
+    // Must mirror the QMatrix4x4 built in updatePaintNode.
+    const QPointF c(width() / 2, height() / 2);
+    QTransform t;
+    t.translate(m_pan.x() + c.x(), m_pan.y() + c.y());
+    t.rotate(m_rotation);
+    t.scale(m_zoom, m_zoom);
+    t.translate(-c.x(), -c.y());
+    return t;
+}
+
+void NdiVideoItem::setZoomAt(qreal newZoom, const QPointF &anchor)
+{
+    newZoom = qBound(kMinZoom, newZoom, kMaxZoom);
+    if (qFuzzyCompare(newZoom, m_zoom))
+        return;
+
+    // Keep the content point under the cursor fixed while zooming.
+    const QPointF base = viewTransform().inverted().map(anchor);
+    m_zoom = newZoom;
+
+    const QPointF c(width() / 2, height() / 2);
+    QTransform noPan;
+    noPan.translate(c.x(), c.y());
+    noPan.rotate(m_rotation);
+    noPan.scale(m_zoom, m_zoom);
+    noPan.translate(-c.x(), -c.y());
+    m_pan = anchor - noPan.map(base);
+}
+
+void NdiVideoItem::wheelEvent(QWheelEvent *event)
+{
+    const qreal notches = event->angleDelta().y() / 120.0;
+    if (notches == 0.0)
+        return;
+
+    if (event->modifiers() & Qt::ControlModifier)
+        m_rotation = std::fmod(m_rotation + notches * kRotateStepDeg, 360.0);
+    else
+        setZoomAt(m_zoom * std::pow(kZoomStepFactor, notches),
+                  event->position());
+
+    viewUpdated();
+    event->accept();
+}
+
+void NdiVideoItem::mousePressEvent(QMouseEvent *event)
+{
+    m_panning = true;
+    m_lastMousePos = event->position();
+    setCursor(Qt::ClosedHandCursor);
+    event->accept();
+}
+
+void NdiVideoItem::mouseMoveEvent(QMouseEvent *event)
+{
+    if (!m_panning)
+        return;
+    m_pan += event->position() - m_lastMousePos;
+    m_lastMousePos = event->position();
+    viewUpdated();
+}
+
+void NdiVideoItem::mouseReleaseEvent(QMouseEvent *event)
+{
+    m_panning = false;
+    unsetCursor();
+    event->accept();
+}
+
+void NdiVideoItem::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    resetZoomPan();
+    event->accept();
+}
+
+void NdiVideoItem::geometryChange(const QRectF &newGeometry,
+                                  const QRectF &oldGeometry)
+{
+    QQuickItem::geometryChange(newGeometry, oldGeometry);
+    update();
 }
 
 void NdiVideoItem::onFrame(const QImage &frame)
@@ -178,36 +356,46 @@ void NdiVideoItem::onStatus(const QString &status)
 
 QSGNode *NdiVideoItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
-    auto *node = static_cast<QSGSimpleTextureNode *>(oldNode);
+    auto *root = static_cast<QSGTransformNode *>(oldNode);
+    auto *texNode = root
+        ? static_cast<QSGSimpleTextureNode *>(root->firstChild())
+        : nullptr;
 
     if (m_frameDirty) {
         m_frameDirty = false;
         if (m_pendingFrame.isNull()) {
-            delete node;
+            delete root;
             return nullptr;
         }
-        if (!node) {
-            node = new QSGSimpleTextureNode;
-            node->setOwnsTexture(true);
-            node->setFiltering(QSGTexture::Linear);
+        if (!root) {
+            root = new QSGTransformNode;
+            texNode = new QSGSimpleTextureNode;
+            texNode->setOwnsTexture(true);
+            texNode->setFiltering(QSGTexture::Linear);
+            root->appendChildNode(texNode);
         }
-        node->setTexture(window()->createTextureFromImage(m_pendingFrame));
+        texNode->setTexture(window()->createTextureFromImage(m_pendingFrame));
         m_textureSize = m_pendingFrame.size();
     }
 
-    if (!node)
-        return nullptr;
+    if (!root || m_textureSize.isEmpty())
+        return root;
 
-    // Letterbox: largest rect with the video's aspect ratio that fits us.
-    QRectF fit(0, 0, width(), height());
-    if (!m_textureSize.isEmpty()) {
-        const qreal scale = qMin(width() / m_textureSize.width(),
-                                 height() / m_textureSize.height());
-        const qreal w = m_textureSize.width() * scale;
-        const qreal h = m_textureSize.height() * scale;
-        fit = QRectF((width() - w) / 2, (height() - h) / 2, w, h);
-    }
-    node->setRect(fit);
+    // Crop = UV window into the texture (source rect is in texture pixels).
+    texNode->setSourceRect(QRectF(m_crop.x() * m_textureSize.width(),
+                                  m_crop.y() * m_textureSize.height(),
+                                  m_crop.width() * m_textureSize.width(),
+                                  m_crop.height() * m_textureSize.height()));
+    texNode->setRect(fitRect());
 
-    return node;
+    // Zoom/pan/rotate = one matrix on the quad; the GPU does the rest.
+    const QPointF c(width() / 2, height() / 2);
+    QMatrix4x4 m;
+    m.translate(float(m_pan.x() + c.x()), float(m_pan.y() + c.y()));
+    m.rotate(float(m_rotation), 0, 0, 1);
+    m.scale(float(m_zoom));
+    m.translate(float(-c.x()), float(-c.y()));
+    root->setMatrix(m);
+
+    return root;
 }

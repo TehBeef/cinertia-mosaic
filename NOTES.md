@@ -12,10 +12,11 @@ approval from the NDI team, so everything internal uses this codename for now.
 Easy to rename later.
 
 ## Current status
-**Milestone 2 — single-source viewer.** The app discovers NDI sources on
-the network, lists them in a sidebar, and shows the selected one live with
-correct aspect ratio. Awaiting Max's test against real sources.
-(Milestone 1 — environment setup — is complete and signed off.)
+**Milestone 3 — GPU view transforms.** Zoom (scroll), pan (drag), rotate
+(Ctrl+scroll or 90° buttons), crop (drag a box), and reset — all done on
+the GPU by moving a transform matrix / texture window, never by
+re-decoding video. Awaiting Max's feel test.
+(Milestones 1–2 are complete and signed off.)
 
 ## Files in the project
 
@@ -26,8 +27,8 @@ correct aspect ratio. Awaiting Max's test against real sources.
 | `CMakeLists.txt` | The build recipe. Tells CMake how to compile the app and which Qt pieces it needs. |
 | `src/main.cpp` | The C++ entry point. Starts the NDI library and loads the user interface. |
 | `src/ndi/NdiFinder.h/.cpp` | Watches the network for NDI sources (checks once a second) and feeds the sidebar list. |
-| `src/ndi/NdiVideoItem.h/.cpp` | The video tile. Each one runs its own background thread that receives one NDI stream (using NDI's frame-sync for smooth timing) and draws the frames on screen, letterboxed to the correct aspect ratio. |
-| `qml/Main.qml` | The user interface: source sidebar (with the required ndi.video link), video viewer, and status strip showing resolution/frame rate. |
+| `src/ndi/NdiVideoItem.h/.cpp` | The video tile. Each one runs its own background thread that receives one NDI stream (using NDI's frame-sync for smooth timing) and draws the frames on screen, letterboxed to the correct aspect ratio. Also owns the view math: zoom/pan/rotate are a transform matrix on the video rectangle, crop is a "window" into the video texture — all GPU work. |
+| `qml/Main.qml` | The user interface: source sidebar (with the required ndi.video link), video viewer, hover toolbar (rotate/crop/reset), crop-selection overlay, and status strip showing resolution/frame rate. |
 | `.gitignore` | Tells git to ignore build output and editor junk. |
 | `build/` | (created during builds) Compiled output. Never edited by hand, safe to delete. |
 
