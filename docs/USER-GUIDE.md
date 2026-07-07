@@ -161,7 +161,7 @@ program/preview wall on the stage-left TV.
 - **Add a canvas:** click **+ Add** in the sidebar's **Canvases**
   section. A new window opens ("Output 2", "Output 3", …) — on a second
   monitor by default when one is connected.
-- **Aim your clicks:** the Canvases buttons choose which canvas sidebar
+- **Canvas targeting:** the Canvases buttons choose which canvas sidebar
   source clicks and Layout presets act on. The blue source dots, the
   hint line ("→ Output 2") and the highlighted button always show where
   new tiles will land. You can also use **Send sources here** in an
@@ -216,7 +216,7 @@ program/preview wall on the stage-left TV.
 | Rotate with Alt+scroll | Toggle wheel rotation |
 | Show tile names | Master switch for all tile labels |
 | Allow duplicate sources | Off (default): sidebar clicks toggle a source on/off. On: each click adds another copy of the source |
-| Keep display awake | Stops Windows blanking the screen (show days) |
+| Keep display awake | Stops Windows blanking the screen (unattended operation) |
 | Remote control + port | The Companion/Stream Deck TCP interface |
 | Tile spacing | Gap used by layouts; 0 = seamless |
 | About Mosaic… | Version, support contact, NDI® notices |

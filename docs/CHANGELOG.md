@@ -47,7 +47,7 @@ Vizrt NDI AB.
 First public-ready release: a single Inno Setup installer with
 everything bundled (Qt runtime and NDI® DLL in the app folder).
 
-### Show-day features
+### Production features
 - **Profiles:** named setups bundling sources, layout and every
   tile's view. Click to switch instantly — shared sources never
   reconnect. The active profile auto-saves every change; the session
@@ -62,7 +62,7 @@ everything bundled (Qt runtime and NDI® DLL in the app folder).
   profile and layout, active-profile button feedback and
   connection-status handling.
 - **Keep display awake:** stops Windows from blanking the monitor
-  during unattended show-day use.
+  during unattended operation.
 
 ### Tiles and sources
 - **Per-tile options (⋯ menu):** custom tile name, source-name

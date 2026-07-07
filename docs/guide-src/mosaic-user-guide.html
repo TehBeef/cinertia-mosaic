@@ -138,9 +138,9 @@
         <ol>
             <li><strong>Add sources</strong> — every NDI source on your network appears in the left sidebar automatically. Click one to put it on the canvas; click again to remove it.</li>
             <li><strong>Arrange</strong> — click a layout under <strong>LAYOUTS</strong> (2×2, 3×3, 4×4, 1+side, 2+8), or drag tiles wherever you want them.</li>
-            <li><strong>Look closer</strong> — scroll to zoom into any tile, drag to pan while zoomed, double-click to reset.</li>
+            <li><strong>Zoom</strong> — scroll to zoom into any tile, drag to pan while zoomed, double-click to reset.</li>
             <li><strong>Save a profile</strong> — type a name under <strong>PROFILES</strong> and press Save. Click profile names to switch setups instantly.</li>
-            <li><strong>Go big</strong> — press <kbd>F11</kbd> for fullscreen. <kbd>Esc</kbd> brings you back.</li>
+            <li><strong>Fullscreen</strong> — press <kbd>F11</kbd>. <kbd>Esc</kbd> returns to windowed.</li>
         </ol>
     </div>
 
@@ -187,7 +187,7 @@
     <img class="fig w60" src="img/fig-options.png" alt="Tile options menu">
     <div class="figcap">The ⋯ menu: rename the tile and toggle its label, meter, and bandwidth/latency modes.</div>
 
-    <div class="tip"><strong>One camera, many crops:</strong> turn on <strong>Settings → Allow duplicate sources</strong> and each sidebar click adds another copy of the source — crop each tile to a different part of one wide shot. The badge (● 3) counts the copies; remove them with the tile ✕.</div>
+    <div class="tip"><strong>Duplicate sources:</strong> turn on <strong>Settings → Allow duplicate sources</strong> and each sidebar click adds another copy of the source — for example, several tiles each cropped to a different part of one wide shot. The badge (● 3) counts the copies; remove them with the tile ✕.</div>
 
     <div class="pagebreak"></div>
 
@@ -208,17 +208,17 @@
         <tr><td>Fullscreen</td><td>Borderless fullscreen; pick the monitor in Settings. <kbd>F11</kbd> toggles, <kbd>Esc</kbd> exits</td></tr>
         <tr><td>Windowless</td><td>Frameless canvas. Drag empty canvas to move it, grab any edge to resize, pair with Always on top</td></tr>
     </table>
-    <p>Your tile arrangement scales proportionally with every mode change — the layout you built is the layout you keep.</p>
+    <p>Your tile arrangement scales proportionally with every mode change, so the layout is preserved.</p>
 
     <h2>Multi-monitor canvases</h2>
     <p>Mosaic can drive more than one display: each <strong>canvas</strong> is its own window full of tiles — e.g. a producer multiview on your main screen and a clean program/preview wall on the stage-left TV.</p>
     <ul>
         <li><strong>Add a canvas:</strong> click <strong>+ Add</strong> under <strong>CANVASES</strong>. A new window opens ("Output 2", "Output 3", …) — on a second monitor by default when one is connected.</li>
-        <li><strong>Aim your clicks:</strong> the Canvases buttons choose which canvas sidebar source clicks and Layout presets act on. The blue source dots and the hint line ("→ Output 2") always show where new tiles will land.</li>
+        <li><strong>Canvas targeting:</strong> the Canvases buttons choose which canvas sidebar source clicks and Layout presets act on. The blue source dots and the hint line ("→ Output 2") always show where new tiles will land.</li>
         <li><strong>The canvas menu:</strong> hover an output's <strong>bottom edge</strong> and click the <b>⋯</b> button — it sits at the bottom so it can never cover a tile's menu. From there: <strong>rename</strong> the canvas (e.g. <em>STAGE LEFT WALL</em>), <strong>Send sources here</strong>, the <strong>window type</strong> (Windowed / Fullscreen / Windowless), an exact <strong>size</strong>, the <strong>monitor</strong> picker, and <strong>Close</strong>.</li>
         <li><strong>Everything is remembered:</strong> profiles and the session store each canvas — tiles, name, window type, monitor, position. Switching profiles switches the whole multi-monitor look at once.</li>
     </ul>
-    <div class="tip"><strong>Show-day recipe:</strong> add a canvas per display, send it fullscreen to its monitor from the ⋯ menu, fill each with sources, then save it all as one profile — a Stream Deck button now recalls every wall at once.</div>
+    <div class="tip"><strong>Multi-monitor profiles:</strong> add a canvas for each display, set each one fullscreen on its monitor from the ⋯ menu, add sources, then save the result as a profile — one profile (or one Stream Deck button) restores every display at once.</div>
 
     <h2>Settings <span class="accent">⚙</span></h2>
     <div class="figrow">
@@ -231,7 +231,7 @@
         <tr><td>Rotate with Alt+scroll</td><td>Enable/disable wheel rotation</td></tr>
         <tr><td>Show tile names</td><td>Master switch for all tile labels</td></tr>
         <tr><td>Allow duplicate sources</td><td>Off: clicks toggle a source on/off. On: each click adds another copy</td></tr>
-        <tr><td>Keep display awake</td><td>Stops Windows from blanking the screen — for unattended show-day use</td></tr>
+        <tr><td>Keep display awake</td><td>Stops Windows from blanking the screen — for unattended operation</td></tr>
         <tr><td>TCP remote control + port</td><td>The Stream Deck / Companion interface (default port 9955)</td></tr>
         <tr><td>Tile spacing</td><td>Gap used by layout buttons, 0–64 px. 0 = seamless video wall</td></tr>
     </table>
@@ -267,7 +267,7 @@
         <tr><td><code>PROFILES?</code> · <code>STATUS?</code> · <code>PING</code></td><td>Queries — Mosaic replies, and pushes EVENT lines on every state change</td></tr>
     </table>
 
-    <h2>Good to know</h2>
+    <h2>Notes</h2>
     <ul>
         <li>Profiles and settings live in <code>%APPDATA%\Cinertia Systems\Mosaic\</code> — copy that folder to move your setups to another machine.</li>
         <li>Each tile is its own NDI receiver. For big walls, use <strong>Low bandwidth</strong> on small tiles.</li>
