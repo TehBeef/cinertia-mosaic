@@ -134,8 +134,14 @@ Window {
         height: 34
         color: "#141417ee"
         visible: opacity > 0
-        opacity: topZone.hovered ? 1 : 0
+        // Both handlers: the zone alone flickered — once the bar is up,
+        // its buttons' own hover handling can take the hover away from
+        // the zone behind, hiding the bar mid-click. The bar's own
+        // handler keeps it pinned while the mouse is anywhere on it.
+        opacity: (topZone.hovered || chromeHover.hovered) ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 150 } }
+
+        HoverHandler { id: chromeHover }
 
         component OutBtn: Rectangle {
             property string label
