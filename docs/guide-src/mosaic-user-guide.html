@@ -94,6 +94,20 @@
         break-inside: avoid;
     }
     .pagebreak { break-before: page; }
+
+    .fig {
+        display: block; width: 100%;
+        border: 1px solid #2a2a2e; border-radius: 6px;
+        margin: 2mm 0 1.5mm 0; break-inside: avoid;
+    }
+    .fig.w60 { width: 60%; margin-left: auto; margin-right: auto; }
+    .fig.w35 { width: 35%; }
+    .figcap {
+        color: #5a5a60; font-size: 8.5pt; text-align: center;
+        margin: 0 0 4mm 0; break-before: avoid;
+    }
+    .figrow { display: flex; gap: 5mm; align-items: flex-start; break-inside: avoid; }
+    .figrow > div { flex: 1; }
 </style>
 </head>
 <body>
@@ -106,6 +120,9 @@
             <div class="subtitle">Professional NDI® Multiviewer &nbsp;·&nbsp; User Guide &nbsp;·&nbsp; Cinertia Systems</div>
         </div>
     </div>
+
+    <img class="fig" src="img/fig-hero.png" alt="Mosaic multiview">
+    <div class="figcap">Mosaic running a four-tile production multiview: program, two ISOs and a tone meter — all live NDI®.</div>
 
     <h2>Installation</h2>
     <div class="card">
@@ -131,6 +148,8 @@
     <p><strong>Sidebar (left):</strong> NDI® sources, layout buttons, profiles, and the settings gear ⚙. Collapse it with <b>«</b>; it hides itself in fullscreen and windowless modes — move the mouse to the <strong>left screen edge</strong> and click <b>»</b> to bring it back.</p>
     <p><strong>Canvas:</strong> your tiles. Tiles use every pixel — there are no permanent toolbars.</p>
     <p><strong>Status bar (hidden):</strong> move the mouse to the <strong>bottom edge</strong> to peek at the selected tile's name, resolution and frame rate.</p>
+    <img class="fig" src="img/fig-overview.png" alt="Main window">
+    <div class="figcap">The main window: sidebar with sources, layouts and profiles on the left; the tile canvas everywhere else.</div>
 
     <h2>Working with tiles</h2>
     <p>Hover a tile to reveal its header:
@@ -148,6 +167,12 @@
         <tr><td>Reset the view</td><td>Double-click (zoom/pan) or header → <strong>Fit</strong> (everything, plus reshapes the tile)</td></tr>
     </table>
 
+    <img class="fig w60" src="img/fig-crop.png" alt="Crop selection">
+    <div class="figcap">Crop mode: drag a box over the video — the tile shows just that region, live.</div>
+
+    <img class="fig" src="img/fig-zoom.png" alt="Zoom detail">
+    <div class="figcap">The same source twice: full frame beside a 400% zoom for focus-critical checks.</div>
+
     <h3>Tile options (the ⋯ menu)</h3>
     <table>
         <tr><th>Option</th><th>What it does</th></tr>
@@ -157,6 +182,9 @@
         <tr><td>Low bandwidth</td><td>Receives the NDI proxy stream — ideal for small tiles, big CPU/network savings</td></tr>
         <tr><td>Low latency</td><td>Shows frames the instant they arrive (~a frame less delay, slightly less smooth). For cueing cameras</td></tr>
     </table>
+
+    <img class="fig w60" src="img/fig-options.png" alt="Tile options menu">
+    <div class="figcap">The ⋯ menu: rename the tile and toggle its label, meter, and bandwidth/latency modes.</div>
 
     <div class="tip"><strong>One camera, many crops:</strong> turn on <strong>Settings → Allow duplicate sources</strong> and each sidebar click adds another copy of the source — crop each tile to a different part of one wide shot. The badge (● 3) counts the copies; remove them with the tile ✕.</div>
 
@@ -182,6 +210,8 @@
     <p>Your tile arrangement scales proportionally with every mode change — the layout you built is the layout you keep.</p>
 
     <h2>Settings <span class="accent">⚙</span></h2>
+    <div class="figrow">
+        <div>
     <table>
         <tr><th>Setting</th><th>What it does</th></tr>
         <tr><td>Display mode + monitor</td><td>Windowed / Fullscreen / Windowless, and which screen fullscreen uses</td></tr>
@@ -194,6 +224,12 @@
         <tr><td>TCP remote control + port</td><td>The Stream Deck / Companion interface (default port 9955)</td></tr>
         <tr><td>Tile spacing</td><td>Gap used by layout buttons, 0–64 px. 0 = seamless video wall</td></tr>
     </table>
+        </div>
+        <div style="flex: 0 0 34mm;">
+            <img class="fig" style="width: 100%;" src="img/fig-settings.png" alt="Settings panel">
+            <div class="figcap">The settings panel</div>
+        </div>
+    </div>
 
     <h2>Hotkeys</h2>
     <table>
