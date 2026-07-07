@@ -18,3 +18,4 @@ aqtinstall.log
 
 # Companion module dependencies
 companion-module/**/node_modules/
+companion-module/**/*.tgz

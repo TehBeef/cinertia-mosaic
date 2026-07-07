@@ -200,10 +200,16 @@ every profile and layout, **active-profile button feedback** (the
 button lights while its profile is live, however it was switched), and
 variables like `$(mosaic:current_profile)`.
 
-To sideload it: in the Companion launcher, open the settings cog and
-set the **Developer modules path** to the project's
-`companion-module` folder, then add a **Cinertia Mosaic** connection in
-Companion's web UI and enter Mosaic's IP and port.
+To install it (Companion 3.5 or newer): open Companion's web interface
+→ **Modules** tab → **Import module package** → choose the
+`cinertia-mosaic-x.y.z.tgz` bundle (built with
+`npx companion-module-build` in
+`companion-module\companion-module-cinertia-mosaic`, and included in
+the distribution package). Then add a **Cinertia Mosaic** connection
+and enter Mosaic's IP and port.
+
+For development, the older route still works: point the Companion
+launcher's **Developer modules path** at the `companion-module` folder.
 
 ### The generic fallback
 
