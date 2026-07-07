@@ -374,9 +374,13 @@ Rectangle {
         }
     }
 
-    // In windowless mode, dragging empty canvas moves the window.
+    // In windowless mode, dragging empty canvas moves the window. Only
+    // armed while the cursor is over EMPTY canvas: a DragHandler is
+    // allowed to steal an in-progress drag from any MouseArea, and the
+    // tiles' move/resize/crop areas are all MouseAreas — without this
+    // guard, resizing a tile yanked the whole window around instead.
     DragHandler {
-        enabled: canvas.moveWindowOnDrag
+        enabled: canvas.moveWindowOnDrag && !canvas.hoverTile
         target: null
         onActiveChanged: if (active) canvas.Window.window.startSystemMove()
     }
