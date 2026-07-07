@@ -38,6 +38,8 @@ class MosaicInstance extends InstanceBase {
         this.displayMode = ''
         this.tileCount = 0
         this.rxBuffer = ''
+        this.connected = false
+        this.lastRx = 0
 
         this.setupActions()
         this.setupFeedbacks()
@@ -47,6 +49,10 @@ class MosaicInstance extends InstanceBase {
     }
 
     async destroy() {
+        if (this.heartbeat) {
+            clearInterval(this.heartbeat)
+            delete this.heartbeat
+        }
         if (this.socket) {
             this.socket.destroy()
             delete this.socket
@@ -87,11 +93,23 @@ class MosaicInstance extends InstanceBase {
     }
 
     // ------------------------------------------------------- connection
+    setConnected(ok) {
+        if (ok === this.connected) return
+        this.connected = ok
+        this.setVariableValues({ connection: ok ? 'ok' : 'lost' })
+        this.checkFeedbacks('connection_lost')
+    }
+
     initConnection() {
+        if (this.heartbeat) {
+            clearInterval(this.heartbeat)
+            delete this.heartbeat
+        }
         if (this.socket) {
             this.socket.destroy()
             delete this.socket
         }
+        this.setConnected(false)
         if (!this.config.host) {
             this.updateStatus(InstanceStatus.BadConfig, 'No host set')
             return
@@ -103,11 +121,14 @@ class MosaicInstance extends InstanceBase {
         this.socket.on('connect', () => {
             this.updateStatus(InstanceStatus.Ok)
             this.rxBuffer = ''
+            this.lastRx = Date.now()
+            this.setConnected(true)
             this.send('PROFILES?')
             this.send('STATUS?')
         })
 
         this.socket.on('data', (chunk) => {
+            this.lastRx = Date.now()
             this.rxBuffer += chunk.toString('utf8')
             let idx
             while ((idx = this.rxBuffer.indexOf('\n')) >= 0) {
@@ -118,8 +139,33 @@ class MosaicInstance extends InstanceBase {
         })
 
         this.socket.on('error', (err) => {
+            this.setConnected(false)
             this.updateStatus(InstanceStatus.ConnectionFailure, String(err))
         })
+
+        this.socket.on('status_change', (status) => {
+            if (status !== 'connected') this.setConnected(false)
+        })
+
+        // Heartbeat: PING every 5s; if nothing (not even an OK) has come
+        // back for 12s the link is considered dead — the feedback goes
+        // red and the connection is rebuilt automatically.
+        this.heartbeat = setInterval(() => {
+            if (this.socket && this.socket.isConnected) {
+                if (Date.now() - this.lastRx > 12000) {
+                    this.setConnected(false)
+                    this.updateStatus(
+                        InstanceStatus.ConnectionFailure,
+                        'Mosaic stopped responding'
+                    )
+                    this.initConnection()
+                    return
+                }
+                this.send('PING')
+            } else {
+                this.setConnected(false)
+            }
+        }, 5000)
     }
 
     send(line) {
@@ -262,10 +308,10 @@ class MosaicInstance extends InstanceBase {
                     this.send('MODE ' + action.options.mode)
                 },
             },
-            ping: {
-                name: 'Ping (connectivity check)',
+            reconnect: {
+                name: 'Reconnect to Mosaic',
                 options: [],
-                callback: () => this.send('PING'),
+                callback: () => this.initConnection(),
             },
         })
     }
@@ -273,6 +319,17 @@ class MosaicInstance extends InstanceBase {
     // -------------------------------------------------------- feedbacks
     setupFeedbacks() {
         this.setFeedbackDefinitions({
+            connection_lost: {
+                type: 'boolean',
+                name: 'Connection to Mosaic lost',
+                description: 'Change button style while Companion cannot reach Mosaic (checked with a 5s heartbeat). Pair with the Reconnect action on the same button.',
+                defaultStyle: {
+                    bgcolor: combineRgb(200, 40, 40),
+                    color: combineRgb(255, 255, 255),
+                },
+                options: [],
+                callback: () => !this.connected,
+            },
             active_profile: {
                 type: 'boolean',
                 name: 'Profile is active',
@@ -306,12 +363,41 @@ class MosaicInstance extends InstanceBase {
             { variableId: 'current_profile', name: 'Active profile' },
             { variableId: 'display_mode', name: 'Display mode' },
             { variableId: 'tile_count', name: 'Tiles on canvas' },
+            { variableId: 'connection', name: 'Connection state (ok / lost)' },
         ])
+        this.setVariableValues({ connection: 'lost' })
     }
 
     // ---------------------------------------------------------- presets
     setupPresets() {
         const presets = {}
+        presets['status'] = {
+            type: 'button',
+            category: 'Status',
+            name: 'Mosaic connection (red when lost, press to reconnect)',
+            style: {
+                text: 'Mosaic\n$(mosaic:connection)',
+                size: 'auto',
+                color: combineRgb(64, 208, 96),
+                bgcolor: combineRgb(20, 20, 23),
+            },
+            steps: [
+                {
+                    down: [{ actionId: 'reconnect', options: {} }],
+                    up: [],
+                },
+            ],
+            feedbacks: [
+                {
+                    feedbackId: 'connection_lost',
+                    options: {},
+                    style: {
+                        bgcolor: combineRgb(200, 40, 40),
+                        color: combineRgb(255, 255, 255),
+                    },
+                },
+            ],
+        }
         for (const p of this.profiles) {
             presets[`profile_${p}`] = {
                 type: 'button',
