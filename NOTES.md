@@ -12,6 +12,22 @@ approval from the NDI team, so everything internal uses this codename for now.
 Easy to rename later.
 
 ## Current status
+**0.3.0 roadmap features (awaiting Max's test):**
+1. **Swap a tile's source in place** — every tile's ⋯ menu now ends
+   with a CHANGE SOURCE list of everything on the network. Click one
+   and the tile reconnects to it; position, size, options and custom
+   label stay put, the view resets to fit.
+2. **Multi-monitor canvases** — the sidebar's new CANVASES section
+   (+ Add) opens extra output windows, each a full canvas of its own
+   that can go fullscreen on any monitor (hover its top edge for
+   monitor picker / fullscreen / close). The Canvases buttons pick
+   which canvas sidebar clicks and layout presets aim at. Profiles and
+   the session save every canvas, so a saved "look" restores across
+   all displays. Technical shape: the canvas was extracted from
+   Main.qml into a reusable TileCanvas.qml; OutputWindow.qml wraps one
+   in a frameless-friendly window; Main.qml keeps a model of outputs
+   and routes sidebar actions to the targeted canvas.
+
 **Milestone 6a — profiles & persistence (awaiting Max's test).**
 Profiles live in the sidebar: type a name, hit Save, click a profile to
 switch instantly (sources shared between profiles never reconnect).
@@ -93,8 +109,10 @@ for a TapHandler missing that policy.
 | `src/main.cpp` | The C++ entry point. Starts the NDI library and loads the user interface. |
 | `src/ndi/NdiFinder.h/.cpp` | Watches the network for NDI sources (checks once a second) and feeds the sidebar list. |
 | `src/ndi/NdiVideoItem.h/.cpp` | The video tile. Each one runs its own background thread that receives one NDI stream (using NDI's frame-sync for smooth timing) and draws the frames on screen, letterboxed to the correct aspect ratio. Also owns the view math: zoom/pan/rotate are a transform matrix on the video rectangle, crop is a "window" into the video texture — all GPU work. |
-| `qml/Main.qml` | The main window: source sidebar (click to add/remove tiles, required ndi.video link), the tile canvas, layout presets + snap toggle, and the status strip. |
-| `qml/Tile.qml` | One tile on the canvas: hover header (drag to move, rotate/crop/fit/close buttons), corner resize grips, snap-to-grid logic, crop overlay. The live video inside is a `VideoView` from NdiVideoItem. |
+| `qml/Main.qml` | The main window: source sidebar (click to add/remove tiles, required ndi.video link), layout presets + snap toggle, the CANVASES section (multi-monitor), profiles, settings, and all persistence. |
+| `qml/TileCanvas.qml` | One tile canvas — tiles, selection, snap grid, preset layouts, profile capture/apply. The main window has one; every extra output window has its own. |
+| `qml/OutputWindow.qml` | An extra output window (multi-monitor mode): wraps a TileCanvas, hover chrome at the top edge (monitor picker, fullscreen, close), Esc/F11 handling. |
+| `qml/Tile.qml` | One tile on the canvas: hover header (drag to move, rotate/crop/fit/close buttons), ⋯ menu (rename, options, change source), corner resize grips, snap-to-grid logic, crop overlay. The live video inside is a `VideoView` from NdiVideoItem. |
 | `.gitignore` | Tells git to ignore build output and editor junk. |
 | `build/` | (created during builds) Compiled output. Never edited by hand, safe to delete. |
 

@@ -23,8 +23,8 @@ receive streams).
 ## The main window
 
 - **Sidebar** (left): the Mosaic logo with the settings gear ⚙ and
-  collapse « buttons, then three sections — NDI® Sources, Layouts,
-  Profiles — and the required ndi.video link.
+  collapse « buttons, then four sections — NDI® Sources, Layouts,
+  Canvases, Profiles — and the required ndi.video link.
 - **Canvas** (right): your tiles. Tiles use the entire canvas.
 - **Status bar** (hidden): move the mouse to the bottom edge of the
   canvas to reveal the selected tile's name and stream info
@@ -102,6 +102,10 @@ Click ⋯ in the tile header (click anywhere else to close it):
 - **Low latency:** bypass the frame-sync buffer and show frames the
   moment they arrive — roughly a frame less delay, slightly less smooth
   motion. Great for a camera you cue talent from.
+- **Change source:** pick any discovered source from the list to switch
+  this tile to it **in place** — no deleting and re-adding. The tile
+  keeps its position, size, options and custom label; the view resets
+  to fit the new picture. The current source is highlighted.
 
 All options are saved with profiles and the session.
 
@@ -138,6 +142,38 @@ sizes, every zoom/crop/rotation, names, and options.
 
 Mosaic also autosaves the whole session every 5 seconds and restores it
 on launch — even after a crash or power loss.
+
+Profiles capture **every canvas** — the main one and any extra output
+canvases (below), including which monitor each output is on and whether
+it's fullscreen. Switching profiles switches the whole multi-monitor
+look at once.
+
+---
+
+## Multi-monitor canvases
+
+Mosaic can drive more than one display: each **canvas** is its own
+window full of tiles, and each can go fullscreen on a different
+monitor — e.g. a producer multiview on your main screen and a clean
+program/preview wall on the stage-left TV.
+
+- **Add a canvas:** click **+ Add** in the sidebar's **Canvases**
+  section. A new window opens ("Output 2", "Output 3", …) — on a second
+  monitor by default when one is connected.
+- **Aim your clicks:** the Canvases buttons choose which canvas sidebar
+  source clicks and Layout presets act on. The blue source dots, the
+  hint line ("→ Output 2") and the highlighted button always show where
+  new tiles will land. You can also hover an output window's top edge
+  and press **“Send sources here”**.
+- **Output window controls** (hover the top edge): the canvas name, a
+  **monitor picker** (1, 2, 3…), **Fullscreen/Windowed**, and ✕ to
+  close that canvas (its tiles and connections are dropped). Inside the
+  window, **F11** toggles fullscreen and **Esc** leaves it.
+- Tiles on an output canvas work exactly like on the main one: drag,
+  resize, zoom, crop, swap sources, per-tile options, snap, layouts.
+- Everything is remembered — profiles and the session store each
+  canvas's tiles, monitor, fullscreen state and window position.
+  Closing the main window closes the whole app (and saves first).
 
 ---
 
