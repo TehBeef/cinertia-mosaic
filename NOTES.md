@@ -80,6 +80,56 @@ never-sleep ("Keep display awake" in settings), hotkeys (Ctrl+1–9 switch
 profiles in list order, F11 toggles fullscreen, Esc returns to windowed),
 and TCP remote control for Bitfocus Companion / Stream Deck.
 
+## macOS port (milestone 8 — in progress, `macos-port` branch)
+Porting the finished Windows app to the Mac. Work happens on the
+`macos-port` branch so the Windows build on `master` keeps working.
+
+**Done so far — the toolchain + a dark-theme hello-world window:**
+- Installed the Mac build tools (see "Tools installed on the Mac" below).
+- Built a tiny standalone hello-world app that is NOT the full Mosaic — it
+  needs no NDI SDK, so its only job is to prove the Mac can build and run a
+  Qt window with our dark theme before we wire NDI in. It lives in
+  `dev/macos-hello/` and is completely separate from the real app's build,
+  so it can never break Windows.
+- It builds and runs: a near-black window titled "Mosaic — macOS port" with
+  the Mosaic wordmark and accent colour, confirming **Qt 6.8.3** and, crucially,
+  **render backend: Metal** (Apple M4). Metal is the Mac's GPU path — the same
+  role Direct3D plays on Windows — so the GPU rendering the whole app relies on
+  is confirmed working.
+
+**A macOS build gotcha found and handled:** on Windows the program is
+`Mosaic.exe`; on the Mac a program has no `.exe`, so a bare `Mosaic` file
+would collide with the `Mosaic` folder Qt generates for its QML. The fix is
+the normal Mac way of shipping a program — an **app bundle** (`Mosaic.app`).
+The real app will need `MACOSX_BUNDLE` set for the same reason.
+
+**Where things run from:** the internal Mac drive was essentially full, so the
+project, the Qt install, and all build output live on the external **"Max
+DeRoin"** drive. That drive must be mounted to build or run during development.
+
+**Still to do on the Mac (next milestones, in order):**
+1. NDI SDK for Apple from ndi.video (needs Max to click through the license),
+   then a macOS branch in `CMakeLists.txt` pointing at it and bundling the
+   NDI `.dylib` into the `.app` (the license requires shipping it inside the
+   app, like the Windows DLL).
+2. Single NDI source in a window (milestone-2 equivalent), tested on Max's
+   real sources.
+3. The full app, including the Mac versions of the Windows-only pieces:
+   never-sleep (IOKit power assertions instead of Windows' SetThreadExecution),
+   the app icon (`.icns` + Info.plist instead of the `.rc` resource), and the
+   fullscreen/frameless window handling in `Main.qml`/`OutputWindow.qml`,
+   which has Windows-specific workarounds to revisit.
+4. Distribution as a `.dmg` with `macdeployqt` (signing/notarization later —
+   needs Max's Apple Developer account, not required for local testing).
+
+## Tools installed on the Mac (for the macOS port)
+- **Xcode Command Line Tools** — Apple's C++ compiler (clang), was already installed.
+- **Homebrew** — Mac package manager, was already installed.
+- **CMake 4.3.4** — the build system (installed via Homebrew).
+- **Qt 6.8.3** — the UI framework, matching the Windows 6.8.3 install; installed
+  via aqtinstall to `…/NDI Multiviewer - Mac/Qt` on the external drive.
+- **NDI SDK for Apple** — not yet installed (needs Max's license click).
+
 ## Remote control protocol (Companion "Generic TCP" module)
 Enable in settings, default port 9955. One command per line:
 | Command | What it does |

@@ -13,6 +13,10 @@ dist/
 desktop.ini
 Thumbs.db
 
+# macOS
+.DS_Store
+*.app
+
 # Tool logs
 aqtinstall.log
 
