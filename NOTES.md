@@ -123,12 +123,19 @@ DeRoin"** drive. That drive must be mounted to build or run during development.
    needs Max's Apple Developer account, not required for local testing).
 
 ## Tools installed on the Mac (for the macOS port)
-- **Xcode Command Line Tools** — Apple's C++ compiler (clang), was already installed.
-- **Homebrew** — Mac package manager, was already installed.
-- **CMake 4.3.4** — the build system (installed via Homebrew).
+Everything sizable lives on the external **"Max DeRoin"** drive to keep the
+near-full internal drive clear (Max's instruction). Only Apple's own tools and
+Homebrew are on the internal drive (they were already there).
+- **Xcode Command Line Tools** — Apple's C++ compiler (clang), was already installed (internal).
+- **Homebrew** — Mac package manager, was already installed (internal).
+- **CMake 4.3.3** — the build system, installed as a standalone copy on the
+  external drive at `…/NDI Multiviewer - Mac/tools/` (symlinks in
+  `tools/bin/`). Builds invoke it by that path. (Homebrew's CMake was removed
+  to keep the internal drive clear.)
 - **Qt 6.8.3** — the UI framework, matching the Windows 6.8.3 install; installed
   via aqtinstall to `…/NDI Multiviewer - Mac/Qt` on the external drive.
-- **NDI SDK for Apple** — not yet installed (needs Max's license click).
+- **NDI SDK for Apple** — not yet installed (needs Max's license click; will go
+  on the external drive).
 
 ## Remote control protocol (Companion "Generic TCP" module)
 Enable in settings, default port 9955. One command per line:
