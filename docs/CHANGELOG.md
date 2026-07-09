@@ -6,7 +6,7 @@ Vizrt NDI AB.
 
 ---
 
-## Unreleased
+## 0.3.5 — 2026-07-09
 
 ### Tiles
 - **Uncrop button:** removes a tile's crop and shows the full frame

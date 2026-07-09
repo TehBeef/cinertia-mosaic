@@ -116,7 +116,7 @@
     <div class="cover">
         <img src="../../resources/mosaic-logo.png" alt="Mosaic logo">
         <div>
-            <div class="title">Mosaic <span class="badge">v0.3.0</span></div>
+            <div class="title">Mosaic <span class="badge">v0.3.5</span></div>
             <div class="subtitle">Professional NDI® Multiviewer &nbsp;·&nbsp; User Guide &nbsp;·&nbsp; Cinertia Systems</div>
         </div>
     </div>
@@ -127,7 +127,7 @@
     <h2>Installation</h2>
     <div class="card">
         <ol>
-            <li>Run <code>Mosaic-Setup-0.3.0.exe</code> on 64-bit Windows 10 or 11 and follow the wizard. Everything Mosaic needs is included — there is nothing else to install.</li>
+            <li>Run <code>Mosaic-Setup-0.3.5.exe</code> on 64-bit Windows 10 or 11 and follow the wizard. Everything Mosaic needs is included — there is nothing else to install.</li>
             <li>Launch <strong>Mosaic</strong> from the Start Menu (or the optional desktop icon).</li>
             <li>The first time Mosaic runs, <strong>Windows Firewall</strong> will ask for network access — click <strong>Allow</strong>. NDI® discovery and video need it.</li>
         </ol>
@@ -153,7 +153,7 @@
 
     <h2>Working with tiles</h2>
     <p>Hover a tile to reveal its header:
-        <span class="btnrow"><b>⟲ ⟳</b> rotate 90° · <b>Crop</b> drag-select a region · <b>Fit</b> reset the view and shape the tile to the video · <b>Size</b> exact pixel dimensions · <b>⋯</b> options · <b>✕</b> close</span></p>
+        <span class="btnrow"><b>⟲ ⟳</b> rotate 90° · <b>Crop</b> drag-select a region · <b>Uncrop</b> remove the crop (shown only while cropped) · <b>Fit</b> reset the view · <b>Size</b> exact pixel dimensions · <b>⋯</b> options · <b>✕</b> close</span></p>
     <table>
         <tr><th>To do this</th><th>Do this</th></tr>
         <tr><td>Select a tile</td><td>Click it — blue border, comes to the front. The border fades when idle; nudge the mouse to see it again</td></tr>
@@ -163,8 +163,8 @@
         <tr><td>Zoom</td><td>Scroll (or pinch) over the tile — zooms toward the cursor, 10%–3200%</td></tr>
         <tr><td>Pan while zoomed</td><td>Drag the picture</td></tr>
         <tr><td>Rotate freely</td><td><kbd>Alt</kbd> + scroll (2° steps), or use ⟲ ⟳ for 90°</td></tr>
-        <tr><td>Crop</td><td>Header → <strong>Crop</strong>, drag a box over the region. Crops stack; <strong>Fit</strong> or Clear crop resets</td></tr>
-        <tr><td>Reset the view</td><td>Double-click (zoom/pan) or header → <strong>Fit</strong> (everything, plus reshapes the tile)</td></tr>
+        <tr><td>Crop</td><td>Header → <strong>Crop</strong>, drag a box over the region. Crops stack; <strong>Uncrop</strong> removes them</td></tr>
+        <tr><td>Reset the view</td><td>Double-click (zoom/pan) or header → <strong>Fit</strong>. Uncropped: resets the view and reshapes the tile to the video. Cropped: keeps the crop and the tile's size, refitting the cropped region inside the tile</td></tr>
     </table>
 
     <img class="fig w60" src="img/fig-crop.png" alt="Crop selection">
@@ -216,7 +216,7 @@
         <li><strong>Add a canvas:</strong> click <strong>+ Add</strong> under <strong>CANVASES</strong>. A new window opens ("Output 2", "Output 3", …) — on a second monitor by default when one is connected.</li>
         <li><strong>Canvas targeting:</strong> the Canvases buttons choose which canvas sidebar source clicks and Layout presets act on. The blue source dots and the hint line ("→ Output 2") always show where new tiles will land.</li>
         <li><strong>The canvas menu:</strong> hover an output's <strong>bottom edge</strong> and click the <b>⋯</b> button — it sits at the bottom so it can never cover a tile's menu. From there: <strong>rename</strong> the canvas (e.g. <em>STAGE LEFT WALL</em>), <strong>Send sources here</strong>, the <strong>window type</strong> (Windowed / Fullscreen / Windowless), an exact <strong>size</strong>, the <strong>monitor</strong> picker, and <strong>Close</strong>.</li>
-        <li><strong>Everything is remembered:</strong> profiles and the session store each canvas — tiles, name, window type, monitor, position. Switching profiles switches the whole multi-monitor look at once.</li>
+        <li><strong>Everything is remembered:</strong> profiles and the session store each canvas — tiles, name, window type, monitor, position. Switching profiles switches the whole multi-monitor look at once. Canvases not saved in the selected profile stay open unchanged by default (<strong>Settings → Keep canvases when switching profiles</strong> controls this).</li>
     </ul>
     <div class="tip"><strong>Multi-monitor profiles:</strong> add a canvas for each display, set each one fullscreen on its monitor from the ⋯ menu, add sources, then save the result as a profile — one profile (or one Stream Deck button) restores every display at once.</div>
 
@@ -231,6 +231,7 @@
         <tr><td>Rotate with Alt+scroll</td><td>Enable/disable wheel rotation</td></tr>
         <tr><td>Show tile names</td><td>Master switch for all tile labels</td></tr>
         <tr><td>Allow duplicate sources</td><td>Off: clicks toggle a source on/off. On: each click adds another copy</td></tr>
+        <tr><td>Keep canvases when switching profiles</td><td>On (default): canvases not saved in the selected profile stay open unchanged. Off: they close</td></tr>
         <tr><td>Keep display awake</td><td>Stops Windows from blanking the screen — for unattended operation</td></tr>
         <tr><td>TCP remote control + port</td><td>The Stream Deck / Companion interface (default port 9955)</td></tr>
         <tr><td>Tile spacing</td><td>Gap used by layout buttons, 0–64 px. 0 = seamless video wall</td></tr>
@@ -275,6 +276,11 @@
     </ul>
 
     <h2>What's new</h2>
+    <h3>0.3.5 — July 2026</h3>
+    <ul>
+        <li><strong>Uncrop button:</strong> removes a tile's crop; appears in the header only while a crop is active. <strong>Fit</strong> now respects crops — on a cropped tile it keeps the crop and the tile's size, refitting the cropped region inside the tile.</li>
+        <li><strong>Keep canvases when switching profiles</strong> (new setting, on by default): canvases not saved in the selected profile stay open unchanged instead of closing.</li>
+    </ul>
     <h3>0.3.0 — July 2026</h3>
     <ul>
         <li><strong>Multi-monitor canvases:</strong> extra output windows, each its own tile canvas with a rename box, window type (Windowed / Fullscreen / Windowless), exact size and monitor picker in its bottom-edge ⋯ menu. Profiles save every canvas.</li>
@@ -289,7 +295,7 @@
 
     <div class="footer">
         <strong style="color:#8a8a90">Support:</strong> max@cinertia.systems &nbsp;·&nbsp; Cinertia.Systems<br>
-        Mosaic v0.3.0 — © 2026 Cinertia Systems. NDI® is a registered trademark of Vizrt NDI AB.
+        Mosaic v0.3.5 — © 2026 Cinertia Systems. NDI® is a registered trademark of Vizrt NDI AB.
     </div>
 
 </div>
