@@ -97,29 +97,52 @@ Porting the finished Windows app to the Mac. Work happens on the
   role Direct3D plays on Windows — so the GPU rendering the whole app relies on
   is confirmed working.
 
+**Then the whole app built and ran — first live NDI video on the Mac.** The
+full Mosaic app compiles and links on macOS unchanged (all the C++ including the
+NDI receive code, and every Windows-only piece is already isolated so it just
+compiles to a harmless no-op on Mac). It discovers NDI sources on the network
+and plays one in a tile at the correct aspect ratio — verified against an NDI
+Test Patterns source (colour bars), the full pipeline end to end: NDI receive →
+frame decode → GPU texture → Metal render. Signed off by Max 2026-07-09.
+
 **A macOS build gotcha found and handled:** on Windows the program is
 `Mosaic.exe`; on the Mac a program has no `.exe`, so a bare `Mosaic` file
 would collide with the `Mosaic` folder Qt generates for its QML. The fix is
-the normal Mac way of shipping a program — an **app bundle** (`Mosaic.app`).
-The real app will need `MACOSX_BUNDLE` set for the same reason.
+the normal Mac way of shipping a program — an **app bundle** (`Mosaic.app`,
+via `MACOSX_BUNDLE`). The NDI library (`libndi.dylib`) is bundled inside the
+app at `Contents/Frameworks/` with an rpath, so the `.app` is self-contained —
+the same "runtime ships inside the app" rule the Windows DLL follows.
+
+**macOS permission prompts (important — these don't exist on Windows).** On a
+first run macOS pops system dialogs the user must click **Allow** on, or NDI
+won't work:
+- **"…find devices on local networks?"** — gates NDI discovery *and*
+  broadcasting. Every NDI app hits this (Mosaic, and e.g. NDI Test Patterns).
+  Deny it and the source list stays empty forever. The grant reliably applies
+  when the app is launched normally (Finder / LaunchServices), so launch the
+  `.app`, not the bare binary, when testing discovery.
+- **"…access files on a removable volume?"** — appears because the app runs
+  from the external drive. One-time grant, then it sticks.
+These are one-time per app. If discovery ever looks broken on a Mac, check
+System Settings → Privacy & Security → Local Network first.
 
 **Where things run from:** the internal Mac drive was essentially full, so the
 project, the Qt install, and all build output live on the external **"Max
 DeRoin"** drive. That drive must be mounted to build or run during development.
 
-**Still to do on the Mac (next milestones, in order):**
-1. NDI SDK for Apple from ndi.video (needs Max to click through the license),
-   then a macOS branch in `CMakeLists.txt` pointing at it and bundling the
-   NDI `.dylib` into the `.app` (the license requires shipping it inside the
-   app, like the Windows DLL).
-2. Single NDI source in a window (milestone-2 equivalent), tested on Max's
-   real sources.
-3. The full app, including the Mac versions of the Windows-only pieces:
+**Done:** toolchain, dark-theme hello-world, NDI SDK wired in, and a single
+live NDI source playing in a tile (milestones 1–2 equivalent).
+
+**Still to do on the Mac (next, in order):**
+1. Exercise the rest of the app on macOS against real sources: transforms
+   (zoom/pan/rotate/crop), multi-tile canvas, and especially the
+   fullscreen/frameless window handling in `Main.qml`/`OutputWindow.qml`
+   (`applyMode`/`applyDisplayMode`) — those contain Windows-specific
+   window-flag workarounds that need a Mac pass.
+2. Mac versions of the Windows-only pieces that are currently no-ops:
    never-sleep (IOKit power assertions instead of Windows' SetThreadExecution),
-   the app icon (`.icns` + Info.plist instead of the `.rc` resource), and the
-   fullscreen/frameless window handling in `Main.qml`/`OutputWindow.qml`,
-   which has Windows-specific workarounds to revisit.
-4. Distribution as a `.dmg` with `macdeployqt` (signing/notarization later —
+   and the app icon (`.icns` + Info.plist instead of the `.rc` resource).
+3. Distribution as a `.dmg` with `macdeployqt` (signing/notarization later —
    needs Max's Apple Developer account, not required for local testing).
 
 ## Tools installed on the Mac (for the macOS port)
