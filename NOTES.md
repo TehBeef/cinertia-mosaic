@@ -188,6 +188,23 @@ Homebrew are on the internal drive (they were already there).
 - **NDI SDK for Apple** — not yet installed (needs Max's license click; will go
   on the external drive).
 
+## Where Mosaic lives online (2026-07-09)
+- **Repo front page:** `README.md` (on master and macos-port) — logo, feature
+  list, screenshots from `docs/guide-src/img/`, download + install for both
+  platforms.
+- **Website:** https://tehbeef.github.io/cinertia-mosaic/ — GitHub Pages,
+  served from the `gh-pages` branch (a single `index.html` + `img/`; edit
+  that branch to change the site). Set as the repo homepage.
+- **Downloads:** GitHub Releases. `v0.4.0` carries `Mosaic-0.4.0.dmg` (the
+  Mac disk image, built by `scripts/stage-deploy-mac.sh`). The Windows
+  installer gets attached from the Windows machine after the next master
+  build there.
+- **Note for the Windows session:** `macos-port` is ready to merge into
+  `master` — everything platform-specific is guarded (APPLE blocks in CMake,
+  Q_OS_MACOS ifdefs), but per the ways of working, verify the Windows build
+  compiles after merging before pushing, then rebuild the installer at 0.4.0
+  and attach it to the v0.4.0 release.
+
 ## Remote control protocol (Companion "Generic TCP" module)
 Enable in settings, default port 9955. One command per line:
 | Command | What it does |
