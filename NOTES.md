@@ -228,7 +228,7 @@ what caused them (sidebar click, hotkey, another controller):
 - `EVENT PROFILES ["..."]` — the profile list changed
 - `EVENT MODE fullscreen` — display mode changed
 This is the foundation for a future native Companion module with active-
-profile button feedback (see CLAUDE.md roadmap).
+profile button feedback (see the project roadmap).
 
 ## New files for the installer
 | File / folder | What it is |
@@ -252,7 +252,6 @@ for a TapHandler missing that policy.
 
 | File / folder | What it is |
 |---|---|
-| `CLAUDE.md` | The project brief — goals, milestones, rules. Claude reads this every session. |
 | `NOTES.md` | This file. Plain-English map of the project. |
 | `docs/USER-GUIDE.md` | The user-facing manual — every feature documented, kept current with each change, basis for the published guide. |
 | `docs/CHANGELOG.md` | Version history — every user-facing change per release, newest first. Update it with each release. |

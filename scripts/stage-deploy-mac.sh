@@ -13,7 +13,9 @@
 # other Macs will need right-click → Open the first time (no notarization).
 set -euo pipefail
 
-BASE="/Volumes/Max DeRoin/Claude Code/NDI Multiviewer - Mac"
+# Build root on the Mac (external drive). Override with MOSAIC_MAC_BASE
+# if the folder moves.
+BASE="${MOSAIC_MAC_BASE:-/Volumes/Max DeRoin/Dev/NDI Multiviewer - Mac}"
 REPO="$BASE/cinertia-mosaic"
 QT="$BASE/Qt/6.8.3/macos"
 export PATH="$BASE/tools/bin:$PATH"

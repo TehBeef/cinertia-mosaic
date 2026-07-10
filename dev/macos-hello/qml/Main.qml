@@ -86,7 +86,7 @@ ApplicationWindow {
     }
 
     // NDI® trademark line kept visible even in the hello-world, per the license
-    // notes in CLAUDE.md — good habit to carry from the start.
+    // notes in the project brief — good habit to carry from the start.
     Text {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
