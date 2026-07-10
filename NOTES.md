@@ -12,13 +12,15 @@ approval from the NDI team, so everything internal uses this codename for now.
 Easy to rename later.
 
 ## Current status
-**Current release: 0.4.5 (Windows + macOS).** Downloads live on the
-GitHub release page (v0.4.5: `Mosaic-Setup-0.4.5.exe`, the user guide
-PDF, the Companion module, and `Mosaic-0.4.5.dmg` once the Mac session
-attaches it) and are linked from the website. New in 0.4.5: tiles
-resize from any side, and Shift+drag repositions the picture inside
-the tile. The macos-port branch is merged into master; both
-platforms build from one codebase. Version history:
+**Current release: 0.4.5 (Windows + macOS) — complete on the release
+page.** All four downloads are attached to the v0.4.5 GitHub release
+(`Mosaic-Setup-0.4.5.exe`, `Mosaic-0.4.5.dmg`, the user guide PDF, and
+the Companion module) and linked from the website. The Mac build of
+0.4.5 was tested against live sources (edge resize, Shift+drag
+reposition, general smoke test) and signed off by Max 2026-07-10. New
+in 0.4.5: tiles resize from any side, and Shift+drag repositions the
+picture inside the tile. The macos-port branch is merged into master;
+both platforms build from one codebase. Version history:
 `docs/CHANGELOG.md`. The 0.3.5 distribution package
 (`dist\Mosaic-0.3.5-Package.zip`) remains the last zip-style bundle.
 
