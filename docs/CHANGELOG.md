@@ -9,6 +9,11 @@ Vizrt NDI AB.
 ## Unreleased
 
 ### Performance
+- **Video conversion moved to the GPU:** NDI® frames previously had
+  their pixel format converted on the CPU before display — the single
+  largest per-frame cost for large tiles. Frames now upload in their
+  native format and convert on the graphics card, roughly halving
+  per-frame CPU work and memory traffic for full-resolution sources.
 - **Auto low bandwidth for small tiles (new setting, on by default):**
   tiles rendered at proxy size or smaller automatically switch to the
   NDI® proxy stream and back, cutting CPU and network use on dense

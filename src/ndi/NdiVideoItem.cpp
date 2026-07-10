@@ -1,7 +1,10 @@
 #include "NdiVideoItem.h"
 
+#include "UyvyMaterial.h"
+
 #include <QMouseEvent>
 #include <QQuickWindow>
+#include <QSGGeometryNode>
 #include <QSGSimpleTextureNode>
 #include <QSGTransformNode>
 #include <QTimer>
@@ -18,6 +21,32 @@ constexpr qreal kMaxZoom = 32.0;
 constexpr qreal kZoomStepFactor = 1.15; // per wheel notch
 constexpr qreal kRotateStepDeg = 2.0;   // per wheel notch with Ctrl
 constexpr qreal kMinCropSize = 0.01;    // normalized
+
+// Wraps an NDI frame buffer for the cross-thread handoff. UYVY (and UYVA,
+// whose alpha plane we ignore) is passed through as raw bytes disguised as
+// an RGBA image of width/2 - the GPU shader unpacks it. BGRA/BGRX maps
+// onto QImage directly. Returns the video width in `uyvyWidth` for packed
+// frames, 0 for regular images.
+QImage wrapFrame(const NDIlib_video_frame_v2_t &frame, int *uyvyWidth)
+{
+    const bool packed = frame.FourCC == NDIlib_FourCC_video_type_UYVY
+        || frame.FourCC == NDIlib_FourCC_video_type_UYVA;
+    if (packed) {
+        *uyvyWidth = frame.xres;
+        return QImage(reinterpret_cast<const uchar *>(frame.p_data),
+                      frame.xres / 2, frame.yres,
+                      frame.line_stride_in_bytes,
+                      QImage::Format_RGBA8888).copy();
+    }
+    *uyvyWidth = 0;
+    const QImage::Format format =
+        (frame.FourCC == NDIlib_FourCC_video_type_BGRA)
+            ? QImage::Format_ARGB32
+            : QImage::Format_RGB32;
+    return QImage(reinterpret_cast<const uchar *>(frame.p_data),
+                  frame.xres, frame.yres, frame.line_stride_in_bytes,
+                  format).copy();
+}
 }
 
 // ---------------------------------------------------------------- worker
@@ -37,7 +66,10 @@ void NdiReceiveWorker::start(const QString &sourceName, bool lowBandwidth,
 
     NDIlib_recv_create_v3_t desc;
     desc.source_to_connect_to = source;
-    desc.color_format = NDIlib_recv_color_format_BGRX_BGRA;
+    // "Fastest" hands us the wire format (UYVY) untouched - the UYVY to
+    // RGB conversion happens on the GPU (UyvyMaterial), not per-frame on
+    // the CPU inside the SDK. Sources with alpha still arrive as BGRA.
+    desc.color_format = NDIlib_recv_color_format_fastest;
     desc.bandwidth = lowBandwidth ? NDIlib_recv_bandwidth_lowest
                                   : NDIlib_recv_bandwidth_highest;
     desc.allow_video_fields = false;
@@ -131,16 +163,9 @@ void NdiReceiveWorker::poll()
     }
     m_lastTimestamp = frame.timestamp;
 
-    // BGRA maps onto QImage ARGB32 byte-for-byte on little-endian.
-    // BGRX means the alpha byte is undefined, so treat it as opaque RGB32.
-    const QImage::Format format = (frame.FourCC == NDIlib_FourCC_video_type_BGRA)
-        ? QImage::Format_ARGB32
-        : QImage::Format_RGB32;
-
-    const QImage wrapped(reinterpret_cast<const uchar *>(frame.p_data),
-                         frame.xres, frame.yres, frame.line_stride_in_bytes,
-                         format);
-    emit frameReady(wrapped.copy());
+    int uyvyWidth = 0;
+    const QImage wrapped = wrapFrame(frame, &uyvyWidth);
+    emit frameReady(wrapped, uyvyWidth);
 
     const double fps = frame.frame_rate_D
         ? double(frame.frame_rate_N) / double(frame.frame_rate_D)
@@ -174,14 +199,9 @@ void NdiReceiveWorker::pollDirect()
             recv, &video, m_captureAudio ? &audio : nullptr, nullptr, 0);
 
         if (type == NDIlib_frame_type_video) {
-            const QImage::Format format =
-                (video.FourCC == NDIlib_FourCC_video_type_BGRA)
-                    ? QImage::Format_ARGB32
-                    : QImage::Format_RGB32;
-            const QImage wrapped(
-                reinterpret_cast<const uchar *>(video.p_data),
-                video.xres, video.yres, video.line_stride_in_bytes, format);
-            emit frameReady(wrapped.copy());
+            int uyvyWidth = 0;
+            const QImage wrapped = wrapFrame(video, &uyvyWidth);
+            emit frameReady(wrapped, uyvyWidth);
 
             const double fps = video.frame_rate_D
                 ? double(video.frame_rate_N) / double(video.frame_rate_D)
@@ -644,12 +664,16 @@ void NdiVideoItem::geometryChange(const QRectF &newGeometry,
     update();
 }
 
-void NdiVideoItem::onFrame(const QImage &frame)
+void NdiVideoItem::onFrame(const QImage &frame, int uyvyWidth)
 {
     m_pendingFrame = frame;
+    m_pendingUyvyWidth = uyvyWidth;
     m_frameDirty = true;
-    if (frame.size() != m_videoSize) {
-        m_videoSize = frame.size();
+    const QSize videoSize = uyvyWidth > 0
+        ? QSize(uyvyWidth, frame.height())
+        : frame.size();
+    if (videoSize != m_videoSize) {
+        m_videoSize = videoSize;
         emit videoSizeChanged();
     }
     update();
@@ -666,9 +690,6 @@ void NdiVideoItem::onStatus(const QString &status)
 QSGNode *NdiVideoItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
     auto *root = static_cast<QSGTransformNode *>(oldNode);
-    auto *texNode = root
-        ? static_cast<QSGSimpleTextureNode *>(root->firstChild())
-        : nullptr;
 
     if (m_frameDirty) {
         m_frameDirty = false;
@@ -676,26 +697,68 @@ QSGNode *NdiVideoItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
             delete root;
             return nullptr;
         }
+        const bool uyvy = m_pendingUyvyWidth > 0;
+        // A source can switch pixel formats: the two formats use different
+        // node types, so rebuild the node when the format changes.
+        if (root && m_nodeIsUyvy != uyvy) {
+            delete root;
+            root = nullptr;
+        }
         if (!root) {
             root = new QSGTransformNode;
-            texNode = new QSGSimpleTextureNode;
-            texNode->setOwnsTexture(true);
-            texNode->setFiltering(QSGTexture::Linear);
-            root->appendChildNode(texNode);
+            m_nodeIsUyvy = uyvy;
+            if (uyvy) {
+                // Packed UYVY: textured quad with the conversion shader.
+                auto *node = new QSGGeometryNode;
+                auto *geometry = new QSGGeometry(
+                    QSGGeometry::defaultAttributes_TexturedPoint2D(), 4);
+                geometry->setDrawingMode(QSGGeometry::DrawTriangleStrip);
+                node->setGeometry(geometry);
+                node->setFlag(QSGNode::OwnsGeometry);
+                node->setMaterial(new UyvyMaterial);
+                node->setFlag(QSGNode::OwnsMaterial);
+                root->appendChildNode(node);
+            } else {
+                auto *texNode = new QSGSimpleTextureNode;
+                texNode->setOwnsTexture(true);
+                texNode->setFiltering(QSGTexture::Linear);
+                root->appendChildNode(texNode);
+            }
         }
-        texNode->setTexture(window()->createTextureFromImage(m_pendingFrame));
-        m_textureSize = m_pendingFrame.size();
+        QSGTexture *texture = window()->createTextureFromImage(m_pendingFrame);
+        if (uyvy) {
+            auto *node = static_cast<QSGGeometryNode *>(root->firstChild());
+            static_cast<UyvyMaterial *>(node->material())
+                ->setTexture(texture, m_pendingUyvyWidth);
+            node->markDirty(QSGNode::DirtyMaterial);
+            m_textureSize = QSize(m_pendingUyvyWidth, m_pendingFrame.height());
+        } else {
+            static_cast<QSGSimpleTextureNode *>(root->firstChild())
+                ->setTexture(texture);
+            m_textureSize = m_pendingFrame.size();
+        }
     }
 
     if (!root || m_textureSize.isEmpty())
         return root;
 
-    // Crop = UV window into the texture (source rect is in texture pixels).
-    texNode->setSourceRect(QRectF(m_crop.x() * m_textureSize.width(),
-                                  m_crop.y() * m_textureSize.height(),
-                                  m_crop.width() * m_textureSize.width(),
-                                  m_crop.height() * m_textureSize.height()));
-    texNode->setRect(fitRect());
+    if (m_nodeIsUyvy) {
+        // Crop = normalized UV window baked into the quad's texture coords.
+        auto *node = static_cast<QSGGeometryNode *>(root->firstChild());
+        QSGGeometry::updateTexturedRectGeometry(node->geometry(), fitRect(),
+                                                m_crop);
+        node->markDirty(QSGNode::DirtyGeometry);
+    } else {
+        // Crop = UV window into the texture (source rect in texture pixels).
+        auto *texNode =
+            static_cast<QSGSimpleTextureNode *>(root->firstChild());
+        texNode->setSourceRect(
+            QRectF(m_crop.x() * m_textureSize.width(),
+                   m_crop.y() * m_textureSize.height(),
+                   m_crop.width() * m_textureSize.width(),
+                   m_crop.height() * m_textureSize.height()));
+        texNode->setRect(fitRect());
+    }
 
     // Zoom/pan/rotate = one matrix on the quad; the GPU does the rest.
     const QPointF c(width() / 2, height() / 2);

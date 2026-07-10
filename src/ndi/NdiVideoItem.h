@@ -22,7 +22,9 @@ public slots:
     void setCaptureAudio(bool enabled);
 
 signals:
-    void frameReady(const QImage &frame);
+    // uyvyWidth > 0: `frame` carries packed UYVY bytes as an RGBA image of
+    // width/2 (converted to RGB on the GPU); 0: a regular BGRA image.
+    void frameReady(const QImage &frame, int uyvyWidth);
     void statusChanged(const QString &status);
     void audioLevels(qreal left, qreal right);
 
@@ -139,7 +141,7 @@ protected:
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
 private:
-    void onFrame(const QImage &frame);
+    void onFrame(const QImage &frame, int uyvyWidth);
     void onStatus(const QString &status);
     void onAudioLevels(qreal left, qreal right);
     QRectF fitRect() const;          // letterboxed quad at zoom 1
@@ -156,6 +158,8 @@ private:
     QString m_sourceName;
     QString m_status;
     QImage m_pendingFrame;
+    int m_pendingUyvyWidth = 0;  // 0 = BGRA frame
+    bool m_nodeIsUyvy = false;   // which node type the scene graph holds
     bool m_frameDirty = false;
     QSize m_textureSize;
     QSize m_videoSize;

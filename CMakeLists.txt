@@ -7,7 +7,7 @@ project(Mosaic VERSION 0.4.5 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick Network)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Quick Network ShaderTools)
 
 qt_standard_project_setup(REQUIRES 6.5)
 qt_policy(SET QTP0004 NEW)
@@ -83,6 +83,15 @@ qt_add_qml_module(Mosaic
         src/ndi/NdiFinder.cpp
         src/ndi/NdiVideoItem.h
         src/ndi/NdiVideoItem.cpp
+        src/ndi/UyvyMaterial.h
+        src/ndi/UyvyMaterial.cpp
+)
+
+# UYVY→RGB conversion shaders, compiled by Qt's shader tools for every
+# graphics backend (D3D on Windows, Metal on macOS).
+qt6_add_shaders(Mosaic "mosaic_shaders"
+    PREFIX "/"
+    FILES shaders/uyvy.vert shaders/uyvy.frag
 )
 
 target_include_directories(Mosaic PRIVATE "${NDI_SDK_INCLUDE}" src src/ndi)
