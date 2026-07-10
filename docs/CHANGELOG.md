@@ -6,6 +6,26 @@ Vizrt NDI AB.
 
 ---
 
+## 0.4.0 — 2026-07-09
+
+### Mosaic comes to the Mac
+- **Native macOS version:** the full app — discovery, tiles, GPU
+  transforms, layouts, profiles, multi-monitor canvases, display modes,
+  hotkeys, remote control — now runs natively on Apple Silicon and
+  Intel Macs (macOS 12+), rendering through Metal. Distributed as
+  `Mosaic-<version>.dmg`; see the user guide's macOS install notes
+  (first-launch right-click → Open, and the Local Network permission
+  NDI® needs).
+- **Keep display awake** works on macOS (IOKit power assertion — same
+  behavior as on Windows).
+
+### Fixed
+- **Zoomed video stayed inside its tile border:** zooming a tile could
+  paint the enlarged video over the tile's 1px border (visible on
+  macOS). The video is now clipped to its own area on both platforms.
+
+---
+
 ## 0.3.5 — 2026-07-09
 
 ### Tiles

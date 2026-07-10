@@ -132,6 +132,11 @@ Item {
             id: video
             anchors.fill: parent
             anchors.margins: 1
+            // Clip the video to its own inset rect so a zoomed-in image can't
+            // spill over the tile's 1px border. Without this, the enlarged
+            // content only stops at the outer Rectangle's clip (the border's
+            // outer edge), painting over the border — visible on macOS/Metal.
+            clip: true
             sourceName: tile.sourceName
             wheelRotateEnabled: tile.wheelRotate
             lowBandwidth: tile.lowBw

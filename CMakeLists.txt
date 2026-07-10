@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 # "Mosaic" is a codename only — the product must not ship with "NDI" in its
 # name without approval from the NDI team (see CLAUDE.md license section).
-project(Mosaic VERSION 0.3.5 LANGUAGES CXX)
+project(Mosaic VERSION 0.4.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,14 +13,23 @@ qt_standard_project_setup(REQUIRES 6.5)
 qt_policy(SET QTP0004 NEW)
 
 # ------------------------------------------------------------------ NDI SDK
-# Platform-specific paths are isolated here so a macOS build later only
-# needs a new branch in this block.
+# Platform-specific paths are isolated here. Each platform sets NDI_SDK_INCLUDE
+# and NDI_SDK_LIB. Windows also sets NDI_SDK_DLL to ship beside the .exe; macOS
+# bundles the dylib into the .app (see the POST_BUILD step below).
 if(WIN32)
     set(NDI_SDK_DIR "C:/Program Files/NDI/NDI 6 SDK" CACHE PATH "NDI SDK location")
+    set(NDI_SDK_INCLUDE "${NDI_SDK_DIR}/Include")
     set(NDI_SDK_LIB "${NDI_SDK_DIR}/Lib/x64/Processing.NDI.Lib.x64.lib")
     set(NDI_SDK_DLL "${NDI_SDK_DIR}/Bin/x64/Processing.NDI.Lib.x64.dll")
+elseif(APPLE)
+    # The macOS build uses a copy of the NDI SDK for Apple kept on the external
+    # drive alongside the repo (headers + the universal libndi.dylib), so nothing
+    # lands on the near-full internal drive. Override with -DNDI_SDK_DIR=… .
+    set(NDI_SDK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../NDI SDK for Apple" CACHE PATH "NDI SDK location")
+    set(NDI_SDK_INCLUDE "${NDI_SDK_DIR}/include")
+    set(NDI_SDK_LIB "${NDI_SDK_DIR}/lib/macOS/libndi.dylib")
 endif()
-if(NOT EXISTS "${NDI_SDK_DIR}/Include/Processing.NDI.Lib.h")
+if(NOT EXISTS "${NDI_SDK_INCLUDE}/Processing.NDI.Lib.h")
     message(FATAL_ERROR "NDI SDK not found at ${NDI_SDK_DIR}")
 endif()
 
@@ -30,6 +39,27 @@ qt_add_executable(Mosaic
 )
 if(WIN32)
     target_sources(Mosaic PRIVATE resources/mosaic.rc)
+elseif(APPLE)
+    # App icon: bundle the .icns into the .app and point Info.plist's
+    # CFBundleIconFile at it (the macOS counterpart of the Windows .rc icon).
+    set(MOSAIC_ICNS "${CMAKE_CURRENT_SOURCE_DIR}/resources/mosaic.icns")
+    target_sources(Mosaic PRIVATE "${MOSAIC_ICNS}")
+    set_source_files_properties("${MOSAIC_ICNS}" PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
+    # Bundle identity/version. A stable CFBundleIdentifier also makes macOS
+    # privacy grants (Local Network, removable volume) stick across builds.
+    set_target_properties(Mosaic PROPERTIES
+        MACOSX_BUNDLE_ICON_FILE "mosaic.icns"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.cinertiasystems.mosaic"
+        MACOSX_BUNDLE_BUNDLE_NAME "Mosaic"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_COPYRIGHT "© 2026 Cinertia Systems. NDI® is a registered trademark of Vizrt NDI AB.")
+    # Custom Info.plist template: adds NSLocalNetworkUsageDescription (the
+    # explanation shown in the "find devices on local networks?" dialog) and
+    # the NDI Bonjour service type on top of CMake's standard bundle keys.
+    set_target_properties(Mosaic PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/resources/Info.plist.in")
 endif()
 
 qt_add_qml_module(Mosaic
@@ -55,17 +85,35 @@ qt_add_qml_module(Mosaic
         src/ndi/NdiVideoItem.cpp
 )
 
-target_include_directories(Mosaic PRIVATE "${NDI_SDK_DIR}/Include" src src/ndi)
+target_include_directories(Mosaic PRIVATE "${NDI_SDK_INCLUDE}" src src/ndi)
 target_link_libraries(Mosaic PRIVATE Qt6::Quick Qt6::Network "${NDI_SDK_LIB}")
 
-# The NDI DLL ships in the app folder — never the system path (license terms).
+# macOS never-sleep (PowerGuard) uses IOKit power assertions.
+if(APPLE)
+    target_link_libraries(Mosaic PRIVATE "-framework IOKit" "-framework CoreFoundation")
+endif()
+
+# The NDI runtime ships inside the app — never the system path (license terms).
 if(WIN32)
+    # Windows: copy the DLL next to the .exe.
     add_custom_command(TARGET Mosaic POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${NDI_SDK_DLL}" "$<TARGET_FILE_DIR:Mosaic>"
     )
+elseif(APPLE)
+    # macOS: bundle libndi.dylib into Mosaic.app/Contents/Frameworks. The dylib's
+    # install name is @rpath/libndi.dylib, so we add an rpath into the bundle's
+    # Frameworks folder and the loader finds it — the .app stays self-contained.
+    target_link_options(Mosaic PRIVATE "-Wl,-rpath,@executable_path/../Frameworks")
+    add_custom_command(TARGET Mosaic POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_BUNDLE_CONTENT_DIR:Mosaic>/Frameworks"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${NDI_SDK_LIB}" "$<TARGET_BUNDLE_CONTENT_DIR:Mosaic>/Frameworks/"
+    )
 endif()
 
-# WIN32_EXECUTABLE hides the console window on Windows. Debug output can
-# still be captured by redirecting stderr when launching from a shell.
-set_target_properties(Mosaic PROPERTIES WIN32_EXECUTABLE TRUE)
+# WIN32_EXECUTABLE hides the console window on Windows (ignored elsewhere).
+# MACOSX_BUNDLE builds a .app on macOS (ignored elsewhere) — required so the
+# executable name doesn't collide with the generated QML module directory.
+set_target_properties(Mosaic PROPERTIES WIN32_EXECUTABLE TRUE MACOSX_BUNDLE TRUE)

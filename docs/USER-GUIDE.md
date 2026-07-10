@@ -13,11 +13,35 @@ switchable profiles, and Stream Deck remote control.
 
 ## Installing
 
+### Windows
+
 Run `Mosaic-Setup-<version>.exe`. It installs to Program Files with a
 Start Menu entry (desktop icon optional) and everything bundled — no
 other software needed. The first time Mosaic runs, **Windows Firewall
 asks for network access: click Allow** (NDI® needs it to find and
 receive streams).
+
+### macOS
+
+Open `Mosaic-<version>.dmg` and drag **Mosaic** into the **Applications**
+folder shortcut next to it. Everything is bundled — no other software
+needed. Apple Silicon and Intel Macs are both supported (macOS 12+).
+
+First launch:
+
+1. **Right-click Mosaic.app → Open → Open.** (A plain double-click is
+   blocked the first time because this build isn't notarized with
+   Apple; right-click → Open is the standard way around it and is only
+   needed once.)
+2. macOS asks **"Allow Mosaic to find devices on local networks?" —
+   click Allow.** That permission is how NDI® finds and receives
+   streams; without it the source list stays empty. If you missed the
+   dialog, turn it on later in **System Settings → Privacy & Security →
+   Local Network**.
+
+Everything in this guide works the same on both platforms. Where a
+keyboard shortcut says **Ctrl** or **Alt**, use **⌘ Cmd** / **⌥ Option**
+on the Mac.
 
 ---
 
