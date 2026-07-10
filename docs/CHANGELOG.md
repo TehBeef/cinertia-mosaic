@@ -6,7 +6,7 @@ Vizrt NDI AB.
 
 ---
 
-## Unreleased
+## 0.4.5 — 2026-07-10
 
 ### Tiles
 - **Resize from any side:** tiles now resize by dragging any edge, not

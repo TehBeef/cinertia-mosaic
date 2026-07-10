@@ -2,8 +2,8 @@
 IDI_ICON1 ICON "mosaic.ico"
 
 1 VERSIONINFO
-FILEVERSION     0,4,0,0
-PRODUCTVERSION  0,4,0,0
+FILEVERSION     0,4,5,0
+PRODUCTVERSION  0,4,5,0
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
@@ -11,9 +11,9 @@ BEGIN
         BEGIN
             VALUE "CompanyName",      "Cinertia Systems"
             VALUE "FileDescription",  "Mosaic Multiviewer"
-            VALUE "FileVersion",      "0.4.0.0"
+            VALUE "FileVersion",      "0.4.5.0"
             VALUE "ProductName",      "Mosaic"
-            VALUE "ProductVersion",   "0.4.0"
+            VALUE "ProductVersion",   "0.4.5"
             VALUE "LegalCopyright",   "Copyright (C) 2026 Cinertia Systems. NDI(R) is a registered trademark of Vizrt NDI AB."
             VALUE "OriginalFilename", "Mosaic.exe"
         END
