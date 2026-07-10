@@ -89,6 +89,10 @@ ApplicationWindow {
     property int tileGap: 8
     // Master switch for all tile name labels.
     property bool showTileNames: true
+    // Small tiles automatically receive the NDI proxy stream (big
+    // CPU/network savings); the per-tile Low bandwidth toggle still
+    // forces it regardless of size.
+    property bool autoLowBw: true
     // Off (default): sidebar clicks toggle a source on/off the canvas.
     // On: every click adds another tile of the source, so one shot can be
     // cropped to several regions.
@@ -431,6 +435,7 @@ ApplicationWindow {
             tileGap: tileGap,
             showTileNames: showTileNames,
             allowDuplicates: allowDuplicates,
+            autoLowBw: autoLowBw,
             neverSleep: neverSleep,
             keepCanvases: keepCanvases,
             remoteEnabled: remoteEnabled,
@@ -459,6 +464,7 @@ ApplicationWindow {
                     tileGap = s.tileGap
                 showTileNames = s.showTileNames !== false
                 allowDuplicates = s.allowDuplicates === true
+                autoLowBw = s.autoLowBw !== false
                 neverSleep = s.neverSleep === true
                 keepCanvases = s.keepCanvases !== false
                 remoteEnabled = s.remoteEnabled === true
@@ -883,6 +889,7 @@ ApplicationWindow {
             wheelRotate: window.wheelRotateOn
             globalShowName: window.showTileNames
             tileGap: window.tileGap
+            autoLowBw: window.autoLowBw
             availableSources: finder.sources
             moveWindowOnDrag: window.displayMode === 2
             focusTarget: keyCatcher
@@ -913,6 +920,7 @@ ApplicationWindow {
             wheelRotateOn: window.wheelRotateOn
             showTileNames: window.showTileNames
             tileGap: window.tileGap
+            autoLowBw: window.autoLowBw
             availableSources: finder.sources
             appQuitting: window.quitting
             onCloseRequested: window.removeOutput(index)
@@ -1173,6 +1181,11 @@ ApplicationWindow {
                 label: "Allow duplicate sources"
                 checked: window.allowDuplicates
                 onToggled: window.allowDuplicates = !window.allowDuplicates
+            }
+            CheckRow {
+                label: "Auto low bandwidth for small tiles"
+                checked: window.autoLowBw
+                onToggled: window.autoLowBw = !window.autoLowBw
             }
             CheckRow {
                 label: "Keep canvases when switching profiles"

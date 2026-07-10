@@ -134,6 +134,9 @@ Click ⋯ in the tile header (click anywhere else to close it):
   edge. Visual only; audio is only processed while the meter is shown.
 - **Low bandwidth:** receive the NDI® proxy stream — much lighter on
   network/CPU, ideal for small tiles. The tile reconnects briefly.
+  (Small tiles switch to the proxy stream automatically when
+  **Settings → Auto low bandwidth for small tiles** is on; this toggle
+  forces it at any size.)
 - **Low latency:** bypass the frame-sync buffer and show frames the
   moment they arrive — roughly a frame less delay, slightly less smooth
   motion. Great for a camera you cue talent from.
@@ -256,6 +259,7 @@ program/preview wall on the stage-left TV.
 | Rotate with Alt+scroll | Toggle wheel rotation |
 | Show tile names | Master switch for all tile labels |
 | Allow duplicate sources | Off (default): sidebar clicks toggle a source on/off. On: each click adds another copy of the source |
+| Auto low bandwidth for small tiles | On (default): tiles rendered at proxy size or smaller automatically receive the lighter NDI® proxy stream, reducing CPU and network load. The tile reconnects briefly when it crosses the size threshold |
 | Keep canvases when switching profiles | On (default): canvases not saved in the selected profile stay open unchanged. Off: they close |
 | Keep display awake | Stops Windows blanking the screen (unattended operation) |
 | Remote control + port | The Companion/Stream Deck TCP interface |

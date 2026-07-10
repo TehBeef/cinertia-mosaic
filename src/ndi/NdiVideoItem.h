@@ -36,6 +36,10 @@ private:
     void *m_recv = nullptr;      // NDIlib_recv_instance_t
     void *m_framesync = nullptr; // NDIlib_framesync_instance_t
     QTimer *m_timer = nullptr;
+    // Timestamp of the last frame handed to the GUI: the frame sync is
+    // polled faster than most sources produce frames, so repeats are
+    // detected here and never copied or uploaded again.
+    qint64 m_lastTimestamp = 0;
     QString m_status;
     QString m_streamInfo;
     bool m_captureAudio = false;
@@ -66,6 +70,10 @@ class NdiVideoItem : public QQuickItem
     Q_PROPERTY(bool wheelRotateEnabled READ wheelRotateEnabled WRITE setWheelRotateEnabled NOTIFY wheelRotateEnabledChanged)
     // Low-bandwidth (proxy) receive for tiles rendered small.
     Q_PROPERTY(bool lowBandwidth READ lowBandwidth WRITE setLowBandwidth NOTIFY lowBandwidthChanged)
+    // Automatic proxy for small tiles: when enabled and the item is
+    // rendered at/below proxy resolution, the receiver switches to the
+    // low-bandwidth stream by itself (manual lowBandwidth still forces it).
+    Q_PROPERTY(bool autoLowBandwidth READ autoLowBandwidth WRITE setAutoLowBandwidth NOTIFY autoLowBandwidthChanged)
     // Low latency: bypass the frame sync and show frames as they arrive
     // (slightly less smooth, roughly a frame less delay).
     Q_PROPERTY(bool lowLatency READ lowLatency WRITE setLowLatency NOTIFY lowLatencyChanged)
@@ -89,6 +97,8 @@ public:
     void setWheelRotateEnabled(bool enabled);
     bool lowBandwidth() const { return m_lowBandwidth; }
     void setLowBandwidth(bool enabled);
+    bool autoLowBandwidth() const { return m_autoLowBandwidth; }
+    void setAutoLowBandwidth(bool enabled);
     bool lowLatency() const { return m_lowLatency; }
     void setLowLatency(bool enabled);
     bool meterEnabled() const { return m_meterEnabled; }
@@ -113,6 +123,7 @@ signals:
     void wheelRotateEnabledChanged();
     void videoSizeChanged();
     void lowBandwidthChanged();
+    void autoLowBandwidthChanged();
     void lowLatencyChanged();
     void meterEnabledChanged();
     void audioLevelsChanged();
@@ -135,6 +146,10 @@ private:
     QTransform viewTransform() const;
     void setZoomAt(qreal newZoom, const QPointF &anchor);
     void viewUpdated();
+    // Effective connection = manual low-bandwidth OR auto-engaged proxy.
+    // (Re)connects the receiver only when the result actually changes.
+    void updateConnection(bool force);
+    void evaluateAutoLow();
 
     QThread m_thread;
     NdiReceiveWorker *m_worker = nullptr;
@@ -153,6 +168,16 @@ private:
     bool m_panning = false;
     bool m_wheelRotateEnabled = true;
     bool m_lowBandwidth = false;
+    bool m_autoLowBandwidth = false;
+    // True while the auto mode has the proxy stream engaged (hysteresis:
+    // engages below 600 px, disengages above 720 px).
+    bool m_autoEngaged = false;
+    // Connection parameters last sent to the worker, so toggles that
+    // don't change the effective result never cause a reconnect.
+    bool m_appliedLow = false;
+    bool m_appliedLat = false;
+    // Debounces size changes: resizing evaluates 1.5 s after it settles.
+    QTimer *m_autoSizeTimer = nullptr;
     bool m_lowLatency = false;
     bool m_meterEnabled = false;
     qreal m_audioLeft = 0.0;

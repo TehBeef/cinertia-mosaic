@@ -80,6 +80,7 @@ void NdiReceiveWorker::shutdown()
         m_recv = nullptr;
     }
     m_streamInfo.clear();
+    m_lastTimestamp = 0;
     m_levelLeft = 0.0f;
     m_levelRight = 0.0f;
 }
@@ -117,6 +118,18 @@ void NdiReceiveWorker::poll()
         setStatus(QStringLiteral("Connecting…"));
         return;
     }
+
+    // The frame sync always returns the LATEST frame — polled at 60 Hz,
+    // that's the same frame again for any source below 60 fps (and forever
+    // for a static picture). Repeats are skipped before the copy and the
+    // GPU upload, which is where nearly all the per-tile CPU goes.
+    if (frame.timestamp != 0 && frame.timestamp != INT64_MAX
+            && frame.timestamp == m_lastTimestamp) {
+        NDIlib_framesync_free_video(
+            static_cast<NDIlib_framesync_instance_t>(m_framesync), &frame);
+        return;
+    }
+    m_lastTimestamp = frame.timestamp;
 
     // BGRA maps onto QImage ARGB32 byte-for-byte on little-endian.
     // BGRX means the alpha byte is undefined, so treat it as opaque RGB32.
@@ -283,6 +296,14 @@ NdiVideoItem::NdiVideoItem()
     connect(m_worker, &NdiReceiveWorker::audioLevels,
             this, &NdiVideoItem::onAudioLevels, Qt::QueuedConnection);
     m_thread.start();
+
+    // Auto low bandwidth reacts to size changes only after they settle,
+    // so dragging a resize never causes a burst of reconnects.
+    m_autoSizeTimer = new QTimer(this);
+    m_autoSizeTimer->setSingleShot(true);
+    m_autoSizeTimer->setInterval(1500);
+    connect(m_autoSizeTimer, &QTimer::timeout,
+            this, &NdiVideoItem::evaluateAutoLow);
 }
 
 NdiVideoItem::~NdiVideoItem()
@@ -303,11 +324,7 @@ void NdiVideoItem::setSourceName(const QString &name)
         QMetaObject::invokeMethod(m_worker, &NdiReceiveWorker::shutdown);
         onStatus(QString());
     } else {
-        QMetaObject::invokeMethod(
-            m_worker, [worker = m_worker, name, low = m_lowBandwidth,
-                       lat = m_lowLatency] {
-                worker->start(name, low, lat);
-            });
+        updateConnection(true);
     }
 
     // Drop the last frame of the previous source and start the view fresh.
@@ -490,20 +507,60 @@ void NdiVideoItem::setWheelRotateEnabled(bool enabled)
     emit wheelRotateEnabledChanged();
 }
 
+// Bandwidth and latency are receiver creation parameters — applying them
+// means reconnecting. Only reconnect when the effective result changes.
+void NdiVideoItem::updateConnection(bool force)
+{
+    if (m_sourceName.isEmpty())
+        return;
+    const bool low = m_lowBandwidth || (m_autoLowBandwidth && m_autoEngaged);
+    if (!force && low == m_appliedLow && m_lowLatency == m_appliedLat)
+        return;
+    m_appliedLow = low;
+    m_appliedLat = m_lowLatency;
+    QMetaObject::invokeMethod(
+        m_worker, [worker = m_worker, name = m_sourceName, low,
+                   lat = m_lowLatency] {
+            worker->start(name, low, lat);
+        });
+}
+
+// The NDI proxy stream is ~640 px wide: an item rendered at or below that
+// loses nothing by switching to it. Hysteresis (600 on / 720 off) keeps a
+// tile hovering near the threshold from flapping between streams.
+void NdiVideoItem::evaluateAutoLow()
+{
+    if (!m_autoLowBandwidth) {
+        m_autoEngaged = false;
+        updateConnection(false);
+        return;
+    }
+    const qreal w = width();
+    if (w <= 0)
+        return;
+    if (!m_autoEngaged && w < 600)
+        m_autoEngaged = true;
+    else if (m_autoEngaged && w > 720)
+        m_autoEngaged = false;
+    updateConnection(false);
+}
+
+void NdiVideoItem::setAutoLowBandwidth(bool enabled)
+{
+    if (enabled == m_autoLowBandwidth)
+        return;
+    m_autoLowBandwidth = enabled;
+    emit autoLowBandwidthChanged();
+    evaluateAutoLow();
+}
+
 void NdiVideoItem::setLowBandwidth(bool enabled)
 {
     if (enabled == m_lowBandwidth)
         return;
     m_lowBandwidth = enabled;
     emit lowBandwidthChanged();
-    // Bandwidth is a receiver creation parameter — reconnect to apply.
-    if (!m_sourceName.isEmpty()) {
-        QMetaObject::invokeMethod(
-            m_worker, [worker = m_worker, name = m_sourceName, enabled,
-                       lat = m_lowLatency] {
-                worker->start(name, enabled, lat);
-            });
-    }
+    updateConnection(false);
 }
 
 void NdiVideoItem::setLowLatency(bool enabled)
@@ -512,13 +569,7 @@ void NdiVideoItem::setLowLatency(bool enabled)
         return;
     m_lowLatency = enabled;
     emit lowLatencyChanged();
-    if (!m_sourceName.isEmpty()) {
-        QMetaObject::invokeMethod(
-            m_worker, [worker = m_worker, name = m_sourceName,
-                       low = m_lowBandwidth, enabled] {
-                worker->start(name, low, enabled);
-            });
-    }
+    updateConnection(false);
 }
 
 void NdiVideoItem::setMeterEnabled(bool enabled)
@@ -588,6 +639,8 @@ void NdiVideoItem::geometryChange(const QRectF &newGeometry,
                                   const QRectF &oldGeometry)
 {
     QQuickItem::geometryChange(newGeometry, oldGeometry);
+    if (m_autoLowBandwidth && newGeometry.size() != oldGeometry.size())
+        m_autoSizeTimer->start(); // (re)evaluate once the resize settles
     update();
 }
 

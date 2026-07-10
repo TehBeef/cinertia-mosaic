@@ -14,6 +14,8 @@ Rectangle {
     property bool wheelRotate: true
     property bool globalShowName: true
     property int tileGap: 8
+    // Small tiles switch to the NDI proxy stream automatically.
+    property bool autoLowBw: true
     // Source names offered in each tile's "change source" list.
     property var availableSources: []
     // Windowless mode: dragging empty canvas moves the whole window.
@@ -445,6 +447,7 @@ Rectangle {
                 snapEnabled: canvas.snapEnabled
                 wheelRotate: canvas.wheelRotate
                 globalShowName: canvas.globalShowName
+                autoLowBw: canvas.autoLowBw
                 availableSources: canvas.availableSources
                 gridSize: 16
                 selected: canvas.selectedTile === this

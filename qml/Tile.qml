@@ -34,6 +34,8 @@ Item {
     // Master switch from settings — hides all labels regardless of the
     // per-tile toggle.
     property bool globalShowName: true
+    // From settings: small tiles auto-switch to the NDI proxy stream.
+    property bool autoLowBw: true
     // Custom label (e.g. "CAM 1 — STAGE LEFT"); empty = show source name.
     property string customName: ""
     // All discovered sources — offered in the ⋯ menu so the tile can be
@@ -140,6 +142,7 @@ Item {
             sourceName: tile.sourceName
             wheelRotateEnabled: tile.wheelRotate
             lowBandwidth: tile.lowBw
+            autoLowBandwidth: tile.autoLowBw
             lowLatency: tile.lowLat
             meterEnabled: tile.showMeter
             onInteracted: {

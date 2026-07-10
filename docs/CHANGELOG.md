@@ -6,6 +6,21 @@ Vizrt NDI AB.
 
 ---
 
+## Unreleased
+
+### Performance
+- **Auto low bandwidth for small tiles (new setting, on by default):**
+  tiles rendered at proxy size or smaller automatically switch to the
+  NDI® proxy stream and back, cutting CPU and network use on dense
+  multiview grids. The per-tile Low bandwidth toggle still forces the
+  proxy stream at any size.
+- **Repeated frames are no longer reprocessed:** sources below 60 fps
+  — and still images such as test patterns — previously had every
+  frame copied and re-uploaded to the GPU 60 times a second. Unchanged
+  frames are now skipped, substantially reducing CPU use per tile.
+
+---
+
 ## 0.4.5 — 2026-07-10
 
 ### Tiles
