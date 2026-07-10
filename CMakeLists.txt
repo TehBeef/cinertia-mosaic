@@ -67,6 +67,11 @@ qt_add_qml_module(Mosaic
 target_include_directories(Mosaic PRIVATE "${NDI_SDK_INCLUDE}" src src/ndi)
 target_link_libraries(Mosaic PRIVATE Qt6::Quick Qt6::Network "${NDI_SDK_LIB}")
 
+# macOS never-sleep (PowerGuard) uses IOKit power assertions.
+if(APPLE)
+    target_link_libraries(Mosaic PRIVATE "-framework IOKit" "-framework CoreFoundation")
+endif()
+
 # The NDI runtime ships inside the app — never the system path (license terms).
 if(WIN32)
     # Windows: copy the DLL next to the .exe.

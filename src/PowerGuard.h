@@ -26,4 +26,9 @@ private:
     void apply();
 
     bool m_keepAwake = false;
+#ifdef Q_OS_MACOS
+    // Holds the active IOKit power assertion (IOPMAssertionID) while awake;
+    // 0 means none. Kept as a plain int so the header needs no IOKit include.
+    unsigned int m_assertionId = 0;
+#endif
 };
