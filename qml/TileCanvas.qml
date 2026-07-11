@@ -222,6 +222,41 @@ Rectangle {
         }
     }
 
+    // Two tiles side by side on top, the remaining tiles sharing one
+    // large row below (with three tiles: two cameras over one full-width
+    // multiview).
+    function applyTwoPlusOne() {
+        const n = tileRepeater.count
+        if (n === 0)
+            return
+        if (n <= 2) {
+            applyGrid(n)
+            return
+        }
+        const gut = tileGap
+        const topN = 2
+        const rest = n - topN
+        const topH = (canvas.height - gut * 3) * 0.45
+        const tw = (canvas.width - gut * (topN + 1)) / topN
+        for (let i = 0; i < topN; i++) {
+            const it = tileRepeater.itemAt(i)
+            it.x = gut + i * (tw + gut)
+            it.y = gut
+            it.width = tw
+            it.height = topH
+        }
+        const bottomY = gut * 2 + topH
+        const bh = canvas.height - bottomY - gut
+        const bw = (canvas.width - gut * (rest + 1)) / rest
+        for (let i = 0; i < rest; i++) {
+            const it = tileRepeater.itemAt(topN + i)
+            it.x = gut + i * (bw + gut)
+            it.y = bottomY
+            it.width = bw
+            it.height = bh
+        }
+    }
+
     // Classic production multiview: two large monitors on top (preview /
     // program), the rest in rows of four below.
     function applyTwoPlusEight() {

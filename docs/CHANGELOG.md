@@ -15,6 +15,9 @@ Vizrt NDI AB.
   seconds), yellow when frames are stalling. Hidden while healthy.
 
 ### Interface
+- **2+1 layout preset:** two tiles side by side on top, the remaining
+  tiles sharing one large row below — e.g. two cameras over a
+  full-width multiview. Also available to remote control (LAYOUT 2+1).
 - **Hide mouse when idle (new setting, on by default):** the cursor
   disappears after 3 seconds without movement while over the tile
   canvas — never over the sidebar or menus — and returns the moment

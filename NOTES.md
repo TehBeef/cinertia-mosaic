@@ -232,7 +232,7 @@ Enable in settings, default port 9955. One command per line:
 |---|---|
 | `PROFILE Show A` | switch to a profile by name |
 | `PROFILEINDEX 2` | switch to the 2nd profile in the list |
-| `LAYOUT 2x2` | apply a layout (2x2, 3x3, 4x4, 1+side, 2+8) |
+| `LAYOUT 2x2` | apply a layout (2x2, 3x3, 4x4, 1+side, 2+8, 2+1) |
 | `MODE fullscreen` | display mode (windowed, fullscreen, windowless) |
 | `PING` | connectivity check |
 | `PROFILES?` | replies `PROFILES ["Show A","Show B"]` (JSON list) |

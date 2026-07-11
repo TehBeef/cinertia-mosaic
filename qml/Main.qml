@@ -62,6 +62,7 @@ ApplicationWindow {
                 case "4x4": window.applyGrid(4); break
                 case "1+side": window.applyOnePlusSide(); break
                 case "2+8": window.applyTwoPlusEight(); break
+                case "2+1": window.applyTwoPlusOne(); break
                 default: ok = false
                 }
                 break
@@ -291,6 +292,7 @@ ApplicationWindow {
     function applyGrid(cols) { targetCanvasItem().applyGrid(cols) }
     function applyOnePlusSide() { targetCanvasItem().applyOnePlusSide() }
     function applyTwoPlusEight() { targetCanvasItem().applyTwoPlusEight() }
+    function applyTwoPlusOne() { targetCanvasItem().applyTwoPlusOne() }
 
     // ------------------------------------------------------- profiles
     // A profile bundles sources + tile layout + per-tile views. Applying
@@ -703,6 +705,7 @@ ApplicationWindow {
                         ToolBtn { label: "4×4"; height: 24; onActivated: window.applyGrid(4) }
                         ToolBtn { label: "1+side"; height: 24; onActivated: window.applyOnePlusSide() }
                         ToolBtn { label: "2+8"; height: 24; onActivated: window.applyTwoPlusEight() }
+                        ToolBtn { label: "2+1"; height: 24; onActivated: window.applyTwoPlusOne() }
                         ToolBtn {
                             label: "Snap"
                             height: 24

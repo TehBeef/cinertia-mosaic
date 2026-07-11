@@ -173,6 +173,8 @@ The **Layouts** section arranges the tiles currently on the canvas:
 - **1+side** — one large tile, the rest stacked beside it
 - **2+8** — classic production multiview: two large monitors on top,
   rows of four below
+- **2+1** — two tiles side by side on top, the remaining tiles sharing
+  one large row below (e.g. two cameras over one full-width multiview)
 - **Snap** — always-on snap-to-grid toggle
 
 **Tile spacing** (settings): the gap the layouts leave between tiles,
@@ -338,7 +340,7 @@ commands on buttons — one per line, case-insensitive:
 |---|---|
 | `PROFILE Show A` | switch to a profile by name |
 | `PROFILEINDEX 2` | switch to the 2nd profile in the list |
-| `LAYOUT 2x2` | apply a layout (2x2, 3x3, 4x4, 1+side, 2+8) |
+| `LAYOUT 2x2` | apply a layout (2x2, 3x3, 4x4, 1+side, 2+8, 2+1) |
 | `MODE fullscreen` | windowed / fullscreen / windowless |
 | `PING` | connectivity check |
 | `PROFILES?` | replies `PROFILES ["Show A", …]` |
