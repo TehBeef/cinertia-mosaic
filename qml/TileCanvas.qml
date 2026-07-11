@@ -259,45 +259,6 @@ Rectangle {
         }
     }
 
-    // Magnetic edges: candidate positions where the dragged tile's
-    // edges meet another tile's (adjacent or aligned); the nearest
-    // within 6 px wins per axis.
-    function magnetize(t, nx, ny) {
-        const eps = 6
-        let bestDx = eps + 1
-        let bestDy = eps + 1
-        let sx = nx
-        let sy = ny
-        for (let i = 0; i < tileRepeater.count; i++) {
-            const o = tileRepeater.itemAt(i)
-            if (!o || o === t)
-                continue
-            if (ny < o.y + o.height && ny + t.height > o.y) {
-                const xc = [o.x + o.width, o.x - t.width,
-                            o.x, o.x + o.width - t.width]
-                for (const c of xc) {
-                    const d = Math.abs(c - nx)
-                    if (d <= eps && d < bestDx) {
-                        bestDx = d
-                        sx = c
-                    }
-                }
-            }
-            if (nx < o.x + o.width && nx + t.width > o.x) {
-                const yc = [o.y + o.height, o.y - t.height,
-                            o.y, o.y + o.height - t.height]
-                for (const c of yc) {
-                    const d = Math.abs(c - ny)
-                    if (d <= eps && d < bestDy) {
-                        bestDy = d
-                        sy = c
-                    }
-                }
-            }
-        }
-        return Qt.point(sx, sy)
-    }
-
     // Tiles touching edge-to-edge (within 2 px, overlapping along the
     // shared edge) form a cluster; Alt+drag moves the whole cluster.
     function connectedGroup(start) {
@@ -338,27 +299,71 @@ Rectangle {
         return arr
     }
 
-    // Magnetic edge for resizing: snaps one edge coordinate to nearby
-    // tile edges (6 px). Tiles following the drag are excluded, or the
-    // magnet would hold the edge at its previous position.
-    function magnetizeEdge(value, isX, exclude) {
-        const eps = 6
-        let best = value
-        let bestD = eps + 1
+    // Windows-style docking: when a dragged tile is RELEASED close to
+    // another tile's edge (within 16 px), it clicks into place beside it
+    // and adopts the neighbor's size along the shared edge, so docked
+    // tiles match resolution. Dragging itself is completely free - to
+    // separate docked tiles, just drag one away.
+    function dockTile(t) {
+        const gapMax = 16
+        let best = null
+        let bestGap = gapMax + 1
         for (let i = 0; i < tileRepeater.count; i++) {
             const o = tileRepeater.itemAt(i)
-            if (!o || exclude.indexOf(o) !== -1)
+            if (!o || o === t)
                 continue
-            const edges = isX ? [o.x, o.x + o.width] : [o.y, o.y + o.height]
-            for (const c of edges) {
-                const d = Math.abs(c - value)
-                if (d <= eps && d < bestD) {
-                    bestD = d
-                    best = c
+            const vOverlap = t.y < o.y + o.height && t.y + t.height > o.y
+            const hOverlap = t.x < o.x + o.width && t.x + t.width > o.x
+            if (vOverlap) {
+                const gapR = Math.abs(t.x - (o.x + o.width))
+                if (gapR < bestGap) {
+                    bestGap = gapR
+                    best = { o: o, side: "right" }
+                }
+                const gapL = Math.abs(o.x - (t.x + t.width))
+                if (gapL < bestGap) {
+                    bestGap = gapL
+                    best = { o: o, side: "left" }
+                }
+            }
+            if (hOverlap) {
+                const gapB = Math.abs(t.y - (o.y + o.height))
+                if (gapB < bestGap) {
+                    bestGap = gapB
+                    best = { o: o, side: "below" }
+                }
+                const gapT = Math.abs(o.y - (t.y + t.height))
+                if (gapT < bestGap) {
+                    bestGap = gapT
+                    best = { o: o, side: "above" }
                 }
             }
         }
-        return best
+        if (!best)
+            return
+        const o = best.o
+        switch (best.side) {
+        case "right":
+            t.x = o.x + o.width
+            t.y = o.y
+            t.height = o.height
+            break
+        case "left":
+            t.x = o.x - t.width
+            t.y = o.y
+            t.height = o.height
+            break
+        case "below":
+            t.y = o.y + o.height
+            t.x = o.x
+            t.width = o.width
+            break
+        case "above":
+            t.y = o.y - t.height
+            t.x = o.x
+            t.width = o.width
+            break
+        }
     }
 
     function closeTilePopups() {

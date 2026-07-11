@@ -110,17 +110,20 @@ Item {
             // Alt+drag: the tile and every tile touching it move as one
             // group, so aligned tiles stay aligned.
             property var group: []
+            property bool moved: false
             onPressed: mouse => {
                 tile.selectRequested()
                 if (closesPopups)
                     tile.closePopups()
                 pressPos = Qt.point(mouse.x, mouse.y)
+                moved = false
                 group = (mouse.modifiers & Qt.AltModifier) && tile.canvasItem
                     ? tile.canvasItem.connectedGroup(tile) : []
             }
             onPositionChanged: mouse => {
                 if (!pressed)
                     return
+                moved = true
                 // Alt can be pressed after the drag starts; grouping is
                 // computed on demand and kept for the rest of the drag.
                 if ((mouse.modifiers & Qt.AltModifier) && group.length === 0
@@ -155,17 +158,20 @@ Item {
                     nx = tile.snap(nx)
                     ny = tile.snap(ny)
                 }
-                // Magnetic edges: stick to nearby tile edges so neighbors
-                // line up seamlessly (beats the grid when both are close).
-                if (tile.canvasItem) {
-                    const m = tile.canvasItem.magnetize(tile, nx, ny)
-                    nx = m.x
-                    ny = m.y
-                }
                 tile.x = Math.max(0, Math.min(nx, tile.parent.width - tile.width))
                 tile.y = Math.max(0, Math.min(ny, tile.parent.height - tile.height))
             }
-            onReleased: tile.snapDragActive = false
+            // Windows-style: the drag is free; docking happens on the
+            // DROP, when the tile lands near another tile's edge. A plain
+            // click never docks, and grid snap / group moves place the
+            // tile deliberately, so they skip docking too.
+            onReleased: mouse => {
+                tile.snapDragActive = false
+                if (moved && group.length === 0 && tile.canvasItem
+                        && !tile.snapEnabled
+                        && !(mouse.modifiers & Qt.ControlModifier))
+                    tile.canvasItem.dockTile(tile)
+            }
             onCanceled: tile.snapDragActive = false
         }
 
@@ -765,12 +771,6 @@ Item {
                                    : startGeom.x + startGeom.width + dx
                     if (tile.snapDragActive)
                         e = tile.snap(e)
-                    if (tile.canvasItem) {
-                        const excl = [tile]
-                        for (const f of vFollow)
-                            excl.push(f.t)
-                        e = tile.canvasItem.magnetizeEdge(e, true, excl)
-                    }
                     e = Math.max(edgeLoX, Math.min(e, edgeHiX))
                     if (onLeft) {
                         tile.x = e
@@ -792,12 +792,6 @@ Item {
                                   : startGeom.y + startGeom.height + dy
                     if (tile.snapDragActive)
                         e = tile.snap(e)
-                    if (tile.canvasItem) {
-                        const excl = [tile]
-                        for (const f of hFollow)
-                            excl.push(f.t)
-                        e = tile.canvasItem.magnetizeEdge(e, false, excl)
-                    }
                     e = Math.max(edgeLoY, Math.min(e, edgeHiY))
                     if (onTop) {
                         tile.y = e
