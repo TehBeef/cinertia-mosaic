@@ -121,9 +121,14 @@ Item {
             onPositionChanged: mouse => {
                 if (!pressed)
                     return
+                // Alt can be pressed after the drag starts; grouping is
+                // computed on demand and kept for the rest of the drag.
+                if ((mouse.modifiers & Qt.AltModifier) && group.length === 0
+                        && tile.canvasItem)
+                    group = tile.canvasItem.connectedGroup(tile)
                 let nx = tile.x + mouse.x - pressPos.x
                 let ny = tile.y + mouse.y - pressPos.y
-                if (group.length > 1) {
+                if (group.length > 1 && (mouse.modifiers & Qt.AltModifier)) {
                     // Group move: raw delta, clamped so the whole cluster
                     // stays on the canvas.
                     tile.snapDragActive = false
@@ -246,13 +251,17 @@ Item {
             MeterBar { height: parent.height; level: video.audioRight }
         }
 
-        // Stream status indicator (top-left): red = not receiving,
-        // yellow = frames stalling. Hidden while the stream is healthy.
+        // Stream status indicator: red = not receiving, yellow =
+        // frames stalling. Hidden while healthy. Sits below the hover
+        // header (which would otherwise cover it) and above every other
+        // overlay.
         Rectangle {
             visible: tile.showStatusDot && video.health > 0
             anchors.top: parent.top
             anchors.left: parent.left
-            anchors.margins: 8
+            anchors.leftMargin: 8
+            anchors.topMargin: 34
+            z: 20
             width: 10
             height: 10
             radius: 5

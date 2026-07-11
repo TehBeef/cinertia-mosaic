@@ -301,7 +301,7 @@ Rectangle {
     // Tiles touching edge-to-edge (within 2 px, overlapping along the
     // shared edge) form a cluster; Alt+drag moves the whole cluster.
     function connectedGroup(start) {
-        const eps = 2
+        const eps = 4
         const group = [start]
         function touching(a, b) {
             const hOverlap = a.y < b.y + b.height - eps
@@ -364,6 +364,11 @@ Rectangle {
         if (pos.x === lastWakePos.x && pos.y === lastWakePos.y)
             return
         lastWakePos = Qt.point(pos.x, pos.y)
+        // Genuine movement only (the guard above): video repaints
+        // re-deliver hover with the mouse still, and poking the cursor
+        // hider on every frame would keep the cursor visible forever.
+        if (canvas.cursorGuard)
+            canvas.cursorGuard.poke()
         if (canvas.selectedTile)
             canvas.selectedTile.wakeHighlight()
     }
@@ -427,8 +432,6 @@ Rectangle {
 
     HoverHandler {
         onPointChanged: {
-            if (canvas.cursorGuard)
-                canvas.cursorGuard.poke()
             canvas.mouseActivity(point.position)
             canvas.updateHoverTile(point.position)
         }

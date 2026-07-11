@@ -1014,7 +1014,9 @@ ApplicationWindow {
         y: 46
         z: 100
         width: 264
-        height: settingsCol.height + 28
+        // Never taller than the window — the content scrolls instead,
+        // so every setting stays reachable on small displays.
+        height: Math.min(settingsCol.height + 28, window.height - 58)
         radius: 6
         color: "#1a1a1e"
         border.width: 1
@@ -1061,12 +1063,18 @@ ApplicationWindow {
             TapHandler { gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: parent.toggled() }
         }
 
+        Flickable {
+            id: settingsFlick
+            anchors.fill: parent
+            anchors.margins: 14
+            contentWidth: width
+            contentHeight: settingsCol.height
+            clip: true
+            ScrollBar.vertical: ScrollBar { }
+
         Column {
             id: settingsCol
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 14
+            width: settingsFlick.width
             spacing: 10
 
             Text {
@@ -1295,11 +1303,12 @@ ApplicationWindow {
 
             Text {
                 width: parent.width
-                text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Shift+drag = move picture · Alt+scroll = rotate · Edges/corners = resize · Ctrl = snap · Esc = windowed · F11 = fullscreen · Ctrl+1–9 = profiles"
+                text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Shift+drag = move picture · Alt+drag = move touching tiles together · Alt+scroll = rotate · Edges/corners = resize · Ctrl = snap · Esc = windowed · F11 = fullscreen · Ctrl+1–9 = profiles"
                 color: "#5a5a60"
                 font.pixelSize: 10
                 wrapMode: Text.WordWrap
             }
+        }
         }
     }
 
