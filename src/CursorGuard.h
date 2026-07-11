@@ -23,6 +23,10 @@ public:
     void setEnabled(bool enabled);
 
     Q_INVOKABLE void poke();
+    // Canvases report when the pointer enters/leaves them; the cursor
+    // only ever hides while it is over a canvas (never over the
+    // sidebar, menus, or other chrome).
+    Q_INVOKABLE void setHovering(bool hovering);
 
 signals:
     void enabledChanged();
@@ -32,6 +36,7 @@ private:
     void showCursor();
 
     bool m_enabled = false;
+    bool m_hovering = false;
     bool m_hidden = false;
     QTimer *m_timer = nullptr;
 };

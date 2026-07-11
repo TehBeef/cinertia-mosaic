@@ -110,15 +110,10 @@ tile. Click empty canvas to deselect.
 - **Snap to grid:** hold **Ctrl** while dragging, or turn on **Snap**
   in the Layouts section. The grid appears on the canvas only while you
   drag with snapping active.
-- **Docking:** drop a tile close to another tile's edge and it clicks
-  into place beside it — aligned, seamless, and matching the neighbor's
-  size along the shared edge (same height side-by-side, same width
-  stacked), like snapping windows in Windows. Dragging itself is
-  completely free; to separate docked tiles, just drag one away.
-- **Linked borders:** tiles that share a border resize together — drag
-  the shared border and both sides follow, staying seamless, like the
-  divider between snapped windows. A tile's outer edges resize only
-  that tile.
+- **Linked borders (Alt+resize):** hold **Alt** and drag a tile edge
+  that other tiles share — the border moves for every tile on it, both
+  sides staying seamless, like the divider between snapped windows.
+  Without Alt, resizing only ever affects the tile you grabbed.
 - **Move tiles together:** hold **Alt** and drag a tile to move it and
   every tile touching it as one group — lined-up tiles stay lined up.
 - **Size** button: type an exact width × height in pixels.

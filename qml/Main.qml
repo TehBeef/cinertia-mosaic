@@ -1302,7 +1302,7 @@ ApplicationWindow {
 
             Text {
                 width: parent.width
-                text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Shift+drag = move picture · Alt+drag = move touching tiles together · Alt+scroll = rotate · Edges/corners = resize · Ctrl = snap · Esc = windowed · F11 = fullscreen · Ctrl+1–9 = profiles"
+                text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Shift+drag = move picture · Alt+drag = move touching tiles together · Alt+resize = shared borders move together · Alt+scroll = rotate · Edges/corners = resize · Ctrl = snap · Esc = windowed · F11 = fullscreen · Ctrl+1–9 = profiles"
                 color: "#5a5a60"
                 font.pixelSize: 10
                 wrapMode: Text.WordWrap

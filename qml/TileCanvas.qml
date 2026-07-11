@@ -299,73 +299,6 @@ Rectangle {
         return arr
     }
 
-    // Windows-style docking: when a dragged tile is RELEASED close to
-    // another tile's edge (within 16 px), it clicks into place beside it
-    // and adopts the neighbor's size along the shared edge, so docked
-    // tiles match resolution. Dragging itself is completely free - to
-    // separate docked tiles, just drag one away.
-    function dockTile(t) {
-        const gapMax = 16
-        let best = null
-        let bestGap = gapMax + 1
-        for (let i = 0; i < tileRepeater.count; i++) {
-            const o = tileRepeater.itemAt(i)
-            if (!o || o === t)
-                continue
-            const vOverlap = t.y < o.y + o.height && t.y + t.height > o.y
-            const hOverlap = t.x < o.x + o.width && t.x + t.width > o.x
-            if (vOverlap) {
-                const gapR = Math.abs(t.x - (o.x + o.width))
-                if (gapR < bestGap) {
-                    bestGap = gapR
-                    best = { o: o, side: "right" }
-                }
-                const gapL = Math.abs(o.x - (t.x + t.width))
-                if (gapL < bestGap) {
-                    bestGap = gapL
-                    best = { o: o, side: "left" }
-                }
-            }
-            if (hOverlap) {
-                const gapB = Math.abs(t.y - (o.y + o.height))
-                if (gapB < bestGap) {
-                    bestGap = gapB
-                    best = { o: o, side: "below" }
-                }
-                const gapT = Math.abs(o.y - (t.y + t.height))
-                if (gapT < bestGap) {
-                    bestGap = gapT
-                    best = { o: o, side: "above" }
-                }
-            }
-        }
-        if (!best)
-            return
-        const o = best.o
-        switch (best.side) {
-        case "right":
-            t.x = o.x + o.width
-            t.y = o.y
-            t.height = o.height
-            break
-        case "left":
-            t.x = o.x - t.width
-            t.y = o.y
-            t.height = o.height
-            break
-        case "below":
-            t.y = o.y + o.height
-            t.x = o.x
-            t.width = o.width
-            break
-        case "above":
-            t.y = o.y - t.height
-            t.x = o.x
-            t.width = o.width
-            break
-        }
-    }
-
     function closeTilePopups() {
         for (let i = 0; i < tileRepeater.count; i++) {
             const t = tileRepeater.itemAt(i)
@@ -476,6 +409,10 @@ Rectangle {
         onHoveredChanged: {
             if (!hovered)
                 canvas.hoverTile = null
+            // The cursor hider only runs while the pointer is over a
+            // canvas - never over the sidebar or other chrome.
+            if (canvas.cursorGuard)
+                canvas.cursorGuard.setHovering(hovered)
         }
     }
 

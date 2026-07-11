@@ -110,20 +110,17 @@ Item {
             // Alt+drag: the tile and every tile touching it move as one
             // group, so aligned tiles stay aligned.
             property var group: []
-            property bool moved: false
             onPressed: mouse => {
                 tile.selectRequested()
                 if (closesPopups)
                     tile.closePopups()
                 pressPos = Qt.point(mouse.x, mouse.y)
-                moved = false
                 group = (mouse.modifiers & Qt.AltModifier) && tile.canvasItem
                     ? tile.canvasItem.connectedGroup(tile) : []
             }
             onPositionChanged: mouse => {
                 if (!pressed)
                     return
-                moved = true
                 // Alt can be pressed after the drag starts; grouping is
                 // computed on demand and kept for the rest of the drag.
                 if ((mouse.modifiers & Qt.AltModifier) && group.length === 0
@@ -161,17 +158,7 @@ Item {
                 tile.x = Math.max(0, Math.min(nx, tile.parent.width - tile.width))
                 tile.y = Math.max(0, Math.min(ny, tile.parent.height - tile.height))
             }
-            // Windows-style: the drag is free; docking happens on the
-            // DROP, when the tile lands near another tile's edge. A plain
-            // click never docks, and grid snap / group moves place the
-            // tile deliberately, so they skip docking too.
-            onReleased: mouse => {
-                tile.snapDragActive = false
-                if (moved && group.length === 0 && tile.canvasItem
-                        && !tile.snapEnabled
-                        && !(mouse.modifiers & Qt.ControlModifier))
-                    tile.canvasItem.dockTile(tile)
-            }
+            onReleased: tile.snapDragActive = false
             onCanceled: tile.snapDragActive = false
         }
 
@@ -673,9 +660,9 @@ Item {
 
         // Resize grips (invisible, cursor changes on hover): four corners
         // resize both axes, four edge strips resize one axis only.
-        // Linked borders (Windows-snap style): tiles whose border
-        // coincides with the dragged edge at press time follow it, so
-        // snapped-together tiles stay seamless while one is resized.
+        // Linked borders (opt-in): hold Alt while grabbing an edge that
+        // other tiles share, and the shared border moves for every tile
+        // on it. Without Alt, resizing only ever affects this tile.
         component Grip: MouseArea {
             property bool onLeft: false
             property bool onTop: false
@@ -706,7 +693,11 @@ Item {
                 vFollow = []
                 hFollow = []
                 const eps = 4
-                const others = tile.canvasItem ? tile.canvasItem.allTiles() : []
+                // Followers are collected only while Alt is held - linked
+                // resizing is opt-in, never automatic.
+                const others = ((mouse.modifiers & Qt.AltModifier)
+                                && tile.canvasItem)
+                    ? tile.canvasItem.allTiles() : []
                 if (horizontal) {
                     const e = onLeft ? tile.x : tile.x + tile.width
                     let lo = onLeft ? 0 : tile.x + tile.minW

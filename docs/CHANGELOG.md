@@ -16,15 +16,13 @@ Vizrt NDI AB.
 
 ### Interface
 - **Hide mouse when idle (new setting, on by default):** the cursor
-  disappears over Mosaic windows after 3 seconds without movement, so
-  it never sits on top of video. It returns the moment the mouse moves.
-- **Tile docking:** releasing a dragged tile close to another tile's
-  edge clicks it into place beside it, aligned and matching the
-  neighbor's size along the shared edge. Dragging itself is free —
-  separating docked tiles is just dragging one away.
-- **Linked borders:** tiles that share a border resize together —
-  dragging the shared border moves it for every tile on it, keeping
-  docked tiles seamless. Outer edges resize only their own tile.
+  disappears after 3 seconds without movement while over the tile
+  canvas — never over the sidebar or menus — and returns the moment
+  the mouse moves.
+- **Linked borders (Alt+resize):** holding Alt while dragging a tile
+  edge that other tiles share moves the border for every tile on it,
+  keeping aligned tiles seamless. Without Alt, resizing affects only
+  the grabbed tile.
 - **Move tiles together:** Alt+drag moves a tile and every tile
   touching it as one group.
 

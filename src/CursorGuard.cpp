@@ -28,7 +28,7 @@ void CursorGuard::setEnabled(bool enabled)
         return;
     m_enabled = enabled;
     emit enabledChanged();
-    if (enabled) {
+    if (enabled && m_hovering) {
         m_timer->start();
     } else {
         m_timer->stop();
@@ -39,8 +39,21 @@ void CursorGuard::setEnabled(bool enabled)
 void CursorGuard::poke()
 {
     showCursor();
-    if (m_enabled)
+    if (m_enabled && m_hovering)
         m_timer->start();
+}
+
+void CursorGuard::setHovering(bool hovering)
+{
+    if (hovering == m_hovering)
+        return;
+    m_hovering = hovering;
+    if (m_enabled && m_hovering) {
+        m_timer->start();
+    } else {
+        m_timer->stop();
+        showCursor();
+    }
 }
 
 void CursorGuard::hideCursor()
