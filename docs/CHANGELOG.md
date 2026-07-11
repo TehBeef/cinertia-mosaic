@@ -18,8 +18,12 @@ Vizrt NDI AB.
 - **Hide mouse when idle (new setting, on by default):** the cursor
   disappears over Mosaic windows after 3 seconds without movement, so
   it never sits on top of video. It returns the moment the mouse moves.
-- **Magnetic tile edges:** while dragging, a tile's edges stick to
-  neighboring tiles' edges for seamless alignment without the grid.
+- **Magnetic tile edges:** while dragging or resizing, a tile's edges
+  stick to neighboring tiles' edges for seamless alignment without the
+  grid.
+- **Linked borders:** tiles that share a border resize together —
+  dragging the shared edge moves it for every tile on it, keeping
+  snapped tiles seamless.
 - **Move tiles together:** Alt+drag moves a tile and every tile
   touching it as one group.
 

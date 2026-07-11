@@ -667,6 +667,9 @@ Item {
 
         // Resize grips (invisible, cursor changes on hover): four corners
         // resize both axes, four edge strips resize one axis only.
+        // Linked borders (Windows-snap style): tiles whose border
+        // coincides with the dragged edge at press time follow it, so
+        // snapped-together tiles stay seamless while one is resized.
         component Grip: MouseArea {
             property bool onLeft: false
             property bool onTop: false
@@ -681,11 +684,69 @@ Item {
                 : (horizontal ? Qt.SizeHorCursor : Qt.SizeVerCursor)
             property point pressScene
             property rect startGeom
+            // Followers per axis and the edge's allowed range (keeps
+            // every tile at or above its minimum size).
+            property var vFollow: []
+            property var hFollow: []
+            property real edgeLoX: 0
+            property real edgeHiX: 1e9
+            property real edgeLoY: 0
+            property real edgeHiY: 1e9
 
             onPressed: mouse => {
                 tile.selectRequested()
                 pressScene = mapToItem(tile.parent, mouse.x, mouse.y)
                 startGeom = Qt.rect(tile.x, tile.y, tile.width, tile.height)
+                vFollow = []
+                hFollow = []
+                const eps = 4
+                const others = tile.canvasItem ? tile.canvasItem.allTiles() : []
+                if (horizontal) {
+                    const e = onLeft ? tile.x : tile.x + tile.width
+                    let lo = onLeft ? 0 : tile.x + tile.minW
+                    let hi = onLeft ? tile.x + tile.width - tile.minW
+                                    : tile.parent.width
+                    const f = []
+                    for (const o of others) {
+                        if (o === tile)
+                            continue
+                        if (!(tile.y < o.y + o.height && tile.y + tile.height > o.y))
+                            continue
+                        if (Math.abs(o.x - e) <= eps) {
+                            f.push({ t: o, leads: true, ox: o.x, ow: o.width })
+                            hi = Math.min(hi, o.x + o.width - o.minW)
+                        } else if (Math.abs(o.x + o.width - e) <= eps) {
+                            f.push({ t: o, leads: false, ox: o.x, ow: o.width })
+                            lo = Math.max(lo, o.x + o.minW)
+                        }
+                    }
+                    vFollow = f
+                    edgeLoX = lo
+                    edgeHiX = hi
+                }
+                if (vertical) {
+                    const e = onTop ? tile.y : tile.y + tile.height
+                    let lo = onTop ? 0 : tile.y + tile.minH
+                    let hi = onTop ? tile.y + tile.height - tile.minH
+                                   : tile.parent.height
+                    const f = []
+                    for (const o of others) {
+                        if (o === tile)
+                            continue
+                        if (!(tile.x < o.x + o.width && tile.x + tile.width > o.x))
+                            continue
+                        if (Math.abs(o.y - e) <= eps) {
+                            f.push({ t: o, leads: true, oy: o.y, oh: o.height })
+                            hi = Math.min(hi, o.y + o.height - o.minH)
+                        } else if (Math.abs(o.y + o.height - e) <= eps) {
+                            f.push({ t: o, leads: false, oy: o.y, oh: o.height })
+                            lo = Math.max(lo, o.y + o.minH)
+                        }
+                    }
+                    hFollow = f
+                    edgeLoY = lo
+                    edgeHiY = hi
+                }
             }
             onReleased: tile.snapDragActive = false
             onCanceled: tile.snapDragActive = false
@@ -695,37 +756,64 @@ Item {
                 const p = mapToItem(tile.parent, mouse.x, mouse.y)
                 const dx = p.x - pressScene.x
                 const dy = p.y - pressScene.y
-                let nx = startGeom.x, ny = startGeom.y
-                let nw = startGeom.width, nh = startGeom.height
+
+                tile.snapDragActive = tile.snapEnabled
+                    || (mouse.modifiers & Qt.ControlModifier)
 
                 if (horizontal) {
-                    if (onLeft) { nx = startGeom.x + dx; nw = startGeom.width - dx }
-                    else        { nw = startGeom.width + dx }
+                    let e = onLeft ? startGeom.x + dx
+                                   : startGeom.x + startGeom.width + dx
+                    if (tile.snapDragActive)
+                        e = tile.snap(e)
+                    if (tile.canvasItem) {
+                        const excl = [tile]
+                        for (const f of vFollow)
+                            excl.push(f.t)
+                        e = tile.canvasItem.magnetizeEdge(e, true, excl)
+                    }
+                    e = Math.max(edgeLoX, Math.min(e, edgeHiX))
+                    if (onLeft) {
+                        tile.x = e
+                        tile.width = startGeom.x + startGeom.width - e
+                    } else {
+                        tile.width = e - startGeom.x
+                    }
+                    for (const f of vFollow) {
+                        if (f.leads) {
+                            f.t.x = e
+                            f.t.width = f.ox + f.ow - e
+                        } else {
+                            f.t.width = e - f.ox
+                        }
+                    }
                 }
                 if (vertical) {
-                    if (onTop)  { ny = startGeom.y + dy; nh = startGeom.height - dy }
-                    else        { nh = startGeom.height + dy }
-                }
-
-                tile.snapDragActive = tile.snapEnabled || (mouse.modifiers & Qt.ControlModifier)
-                if (tile.snapDragActive) {
-                    if (horizontal) {
-                        if (onLeft) { const s = tile.snap(nx); nw += nx - s; nx = s }
-                        else        { nw = tile.snap(nx + nw) - nx }
+                    let e = onTop ? startGeom.y + dy
+                                  : startGeom.y + startGeom.height + dy
+                    if (tile.snapDragActive)
+                        e = tile.snap(e)
+                    if (tile.canvasItem) {
+                        const excl = [tile]
+                        for (const f of hFollow)
+                            excl.push(f.t)
+                        e = tile.canvasItem.magnetizeEdge(e, false, excl)
                     }
-                    if (vertical) {
-                        if (onTop)  { const s = tile.snap(ny); nh += ny - s; ny = s }
-                        else        { nh = tile.snap(ny + nh) - ny }
+                    e = Math.max(edgeLoY, Math.min(e, edgeHiY))
+                    if (onTop) {
+                        tile.y = e
+                        tile.height = startGeom.y + startGeom.height - e
+                    } else {
+                        tile.height = e - startGeom.y
+                    }
+                    for (const f of hFollow) {
+                        if (f.leads) {
+                            f.t.y = e
+                            f.t.height = f.oy + f.oh - e
+                        } else {
+                            f.t.height = e - f.oy
+                        }
                     }
                 }
-
-                if (nw < tile.minW) { if (onLeft) nx -= (tile.minW - nw); nw = tile.minW }
-                if (nh < tile.minH) { if (onTop)  ny -= (tile.minH - nh); nh = tile.minH }
-
-                tile.x = nx
-                tile.y = ny
-                tile.width = nw
-                tile.height = nh
             }
         }
 

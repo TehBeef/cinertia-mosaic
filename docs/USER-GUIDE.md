@@ -110,9 +110,12 @@ tile. Click empty canvas to deselect.
 - **Snap to grid:** hold **Ctrl** while dragging, or turn on **Snap**
   in the Layouts section. The grid appears on the canvas only while you
   drag with snapping active.
-- **Magnetic edges:** while dragging, a tile's edges stick to nearby
-  tile edges (within a few pixels) — adjacent or aligned — so tiles
-  line up seamlessly without the grid.
+- **Magnetic edges:** while dragging or resizing, a tile's edges stick
+  to nearby tile edges (within a few pixels) — adjacent or aligned — so
+  tiles line up seamlessly without the grid.
+- **Linked borders:** when tiles share a border (snapped together),
+  resizing across that border moves it for every tile on it — both
+  sides stay seamless, like resizing snapped windows in Windows.
 - **Move tiles together:** hold **Alt** and drag a tile to move it and
   every tile touching it as one group — lined-up tiles stay lined up.
 - **Size** button: type an exact width × height in pixels.

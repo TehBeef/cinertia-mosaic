@@ -1070,7 +1070,6 @@ ApplicationWindow {
             contentWidth: width
             contentHeight: settingsCol.height
             clip: true
-            ScrollBar.vertical: ScrollBar { }
 
         Column {
             id: settingsCol
@@ -1309,6 +1308,19 @@ ApplicationWindow {
                 wrapMode: Text.WordWrap
             }
         }
+        }
+
+        // Slim gray scroll indicator drawn on the panel background (the
+        // native control style does not allow restyling ScrollBar).
+        Rectangle {
+            visible: settingsFlick.visibleArea.heightRatio < 1
+            anchors.right: parent.right
+            anchors.rightMargin: 4
+            y: 14 + settingsFlick.visibleArea.yPosition * settingsFlick.height
+            height: settingsFlick.visibleArea.heightRatio * settingsFlick.height
+            width: 4
+            radius: 2
+            color: "#3a3a40"
         }
     }
 

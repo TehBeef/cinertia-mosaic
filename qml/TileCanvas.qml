@@ -328,6 +328,39 @@ Rectangle {
         return group
     }
 
+    function allTiles() {
+        const arr = []
+        for (let i = 0; i < tileRepeater.count; i++) {
+            const it = tileRepeater.itemAt(i)
+            if (it)
+                arr.push(it)
+        }
+        return arr
+    }
+
+    // Magnetic edge for resizing: snaps one edge coordinate to nearby
+    // tile edges (6 px). Tiles following the drag are excluded, or the
+    // magnet would hold the edge at its previous position.
+    function magnetizeEdge(value, isX, exclude) {
+        const eps = 6
+        let best = value
+        let bestD = eps + 1
+        for (let i = 0; i < tileRepeater.count; i++) {
+            const o = tileRepeater.itemAt(i)
+            if (!o || exclude.indexOf(o) !== -1)
+                continue
+            const edges = isX ? [o.x, o.x + o.width] : [o.y, o.y + o.height]
+            for (const c of edges) {
+                const d = Math.abs(c - value)
+                if (d <= eps && d < bestD) {
+                    bestD = d
+                    best = c
+                }
+            }
+        }
+        return best
+    }
+
     function closeTilePopups() {
         for (let i = 0; i < tileRepeater.count; i++) {
             const t = tileRepeater.itemAt(i)
