@@ -110,10 +110,14 @@ tile. Click empty canvas to deselect.
 - **Snap to grid:** hold **Ctrl** while dragging, or turn on **Snap**
   in the Layouts section. The grid appears on the canvas only while you
   drag with snapping active.
-- **Linked borders (Alt+resize):** hold **Alt** and drag a tile edge
-  that other tiles share — the border moves for every tile on it, both
-  sides staying seamless, like the divider between snapped windows.
-  Without Alt, resizing only ever affects the tile you grabbed.
+- **Linked borders (Alt+resize):** hold **Alt** while resizing and
+  touching tiles resize together. On a **shared border** (the divider
+  between tiles), the border moves for every tile on it, both sides
+  staying seamless. On an **outer edge** of a touching group, every
+  group tile's matching edge moves to the same line — e.g. Alt+drag
+  the bottom of one of two side-by-side tiles and both bottoms scale
+  together. Without Alt, resizing only ever affects the tile you
+  grabbed.
 - **Move tiles together:** hold **Alt** and drag a tile to move it and
   every tile touching it as one group — lined-up tiles stay lined up.
 - **Size** button: type an exact width × height in pixels.

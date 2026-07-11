@@ -694,10 +694,45 @@ Item {
                 hFollow = []
                 const eps = 4
                 // Followers are collected only while Alt is held - linked
-                // resizing is opt-in, never automatic.
-                const others = ((mouse.modifiers & Qt.AltModifier)
-                                && tile.canvasItem)
-                    ? tile.canvasItem.allTiles() : []
+                // resizing is opt-in, never automatic. Two modes:
+                //  - dragging a SHARED border (divider): the tiles on its
+                //    other side follow, keeping both sides seamless;
+                //  - dragging an OUTER edge of a touching group: every
+                //    group tile's matching outer edge moves to the same
+                //    line, so the whole group scales together.
+                const linking = (mouse.modifiers & Qt.AltModifier)
+                    && tile.canvasItem
+                const others = linking ? tile.canvasItem.allTiles() : []
+                const grp = linking ? tile.canvasItem.connectedGroup(tile) : []
+                // True when a group tile sits against side `side` of `o`
+                // (that edge is interior to the group, not an outer edge).
+                function coveredSide(o, side) {
+                    const e2 = 6
+                    for (const g of grp) {
+                        if (g === o)
+                            continue
+                        if (side === "left" || side === "right") {
+                            if (!(g.y < o.y + o.height && g.y + g.height > o.y))
+                                continue
+                            if (side === "left"
+                                    && Math.abs(g.x + g.width - o.x) <= e2)
+                                return true
+                            if (side === "right"
+                                    && Math.abs(g.x - (o.x + o.width)) <= e2)
+                                return true
+                        } else {
+                            if (!(g.x < o.x + o.width && g.x + g.width > o.x))
+                                continue
+                            if (side === "top"
+                                    && Math.abs(g.y + g.height - o.y) <= e2)
+                                return true
+                            if (side === "bottom"
+                                    && Math.abs(g.y - (o.y + o.height)) <= e2)
+                                return true
+                        }
+                    }
+                    return false
+                }
                 if (horizontal) {
                     const e = onLeft ? tile.x : tile.x + tile.width
                     let lo = onLeft ? 0 : tile.x + tile.minW
@@ -715,6 +750,24 @@ Item {
                         } else if (Math.abs(o.x + o.width - e) <= eps) {
                             f.push({ t: o, leads: false, ox: o.x, ow: o.width })
                             lo = Math.max(lo, o.x + o.minW)
+                        }
+                    }
+                    if (f.length === 0 && !coveredSide(tile, onLeft ? "left" : "right")) {
+                        // Outer edge: the group's matching outer edges follow.
+                        for (const o of grp) {
+                            if (o === tile)
+                                continue
+                            if (onLeft) {
+                                if (coveredSide(o, "left"))
+                                    continue
+                                f.push({ t: o, leads: true, ox: o.x, ow: o.width })
+                                hi = Math.min(hi, o.x + o.width - o.minW)
+                            } else {
+                                if (coveredSide(o, "right"))
+                                    continue
+                                f.push({ t: o, leads: false, ox: o.x, ow: o.width })
+                                lo = Math.max(lo, o.x + o.minW)
+                            }
                         }
                     }
                     vFollow = f
@@ -738,6 +791,23 @@ Item {
                         } else if (Math.abs(o.y + o.height - e) <= eps) {
                             f.push({ t: o, leads: false, oy: o.y, oh: o.height })
                             lo = Math.max(lo, o.y + o.minH)
+                        }
+                    }
+                    if (f.length === 0 && !coveredSide(tile, onTop ? "top" : "bottom")) {
+                        for (const o of grp) {
+                            if (o === tile)
+                                continue
+                            if (onTop) {
+                                if (coveredSide(o, "top"))
+                                    continue
+                                f.push({ t: o, leads: true, oy: o.y, oh: o.height })
+                                hi = Math.min(hi, o.y + o.height - o.minH)
+                            } else {
+                                if (coveredSide(o, "bottom"))
+                                    continue
+                                f.push({ t: o, leads: false, oy: o.y, oh: o.height })
+                                lo = Math.max(lo, o.y + o.minH)
+                            }
                         }
                     }
                     hFollow = f

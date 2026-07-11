@@ -19,10 +19,11 @@ Vizrt NDI AB.
   disappears after 3 seconds without movement while over the tile
   canvas — never over the sidebar or menus — and returns the moment
   the mouse moves.
-- **Linked borders (Alt+resize):** holding Alt while dragging a tile
-  edge that other tiles share moves the border for every tile on it,
-  keeping aligned tiles seamless. Without Alt, resizing affects only
-  the grabbed tile.
+- **Linked borders (Alt+resize):** holding Alt while resizing makes
+  touching tiles resize together — a shared border moves for every
+  tile on it, and an outer edge of a touching group moves every group
+  tile's matching edge to the same line. Without Alt, resizing affects
+  only the grabbed tile.
 - **Move tiles together:** Alt+drag moves a tile and every tile
   touching it as one group.
 
