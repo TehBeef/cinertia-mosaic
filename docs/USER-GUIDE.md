@@ -87,7 +87,11 @@ keep network/CPU use down.
 
 Hover a tile to reveal its **header**: the name, then
 ⟲ ⟳ (rotate 90°), Crop, Uncrop (shown only while a crop is active),
-Fit, Size, ⋯ (options), ✕ (close).
+Fit, Reset, Size, ⋯ (options), ✕ (close).
+
+On a tile too narrow to fit all buttons, the header collapses to
+**☰ and ✕** — the ☰ menu offers every action, and scrolls on short
+tiles so nothing is out of reach.
 
 ### Stream status indicator
 A small **red** dot appears in a tile's top-left corner when the tile
@@ -136,12 +140,19 @@ tile. Click empty canvas to deselect.
   tile shows only that region. Crops can be stacked. Esc cancels.
 - **Uncrop:** removes the crop and shows the full frame again. The
   button appears in the header only while a crop is active.
-- **Double-click:** reset zoom/pan.
-- **Fit:** on an uncropped tile, resets the view *and* reshapes the
-  tile to the video's aspect ratio — picture fills the frame, no black
-  bars. On a **cropped** tile, Fit keeps the crop and the tile's
-  current size and shape, and refits the cropped region inside the
-  tile (zoom, pan and rotation reset).
+- **Double-click:** reset zoom/pan (back to the fitted view, at the
+  current rotation).
+- **Fit:** fits the picture **at its current rotation** — rotation and
+  crop are kept. On an uncropped tile, Fit also reshapes the tile to
+  the rotated picture's outline, always within the tile's current
+  footprint, so the picture fills the frame with no black bars (a
+  90°-turned source gets a narrower, portrait-shaped tile). On a
+  **cropped** tile, Fit keeps the tile's size and shape and refits the
+  cropped region inside it. Once fitted, a rotated picture stays
+  fitted while the tile is resized.
+- **Reset:** undoes crop, rotation, zoom and pan in one click — back to
+  the plain source. The tile's size is untouched (use Fit afterward to
+  reshape it).
 
 ### Tile options (the ⋯ menu)
 Click ⋯ in the tile header (click anywhere else to close it):
@@ -284,16 +295,33 @@ program/preview wall on the stage-left TV.
 | Hide mouse when idle | On (default): the mouse cursor disappears over Mosaic after 3 seconds without movement and returns when moved |
 | Keep canvases when switching profiles | On (default): canvases not saved in the selected profile stay open unchanged. Off: they close |
 | Keep display awake | Stops Windows blanking the screen (unattended operation) |
+| Check for updates at startup | On (default): asks GitHub once at startup whether a newer release exists (see Updates below) |
 | Remote control + port | The Companion/Stream Deck TCP interface |
 | Tile spacing | Gap used by layouts; 0 = seamless |
-| About Mosaic… | Version, support contact, NDI® notices |
+| Shortcuts… | Every keyboard and mouse shortcut, grouped by where it applies |
+| About Mosaic… | Version, support contact, project links, NDI® notices |
 
 Settings, profiles, and the session are stored per user in
 `%APPDATA%\Cinertia Systems\Mosaic\`.
 
 ---
 
+## Updates
+
+With **Check for updates at startup** on (the default), Mosaic asks
+GitHub once, shortly after launch, whether a newer release exists. If
+one does, a small **"Update available — Download"** line appears at the
+bottom of the sidebar and in the About dialog, linking to the release
+page. Nothing is downloaded or installed automatically — updating stays
+a deliberate act, as it should be on a show machine — and the check is
+silent when the machine is offline.
+
+---
+
 ## Hotkeys
+
+The full list is always available in the app under **Settings →
+Shortcuts…**, grouped by where each shortcut applies.
 
 | Key | Action |
 |---|---|
@@ -302,7 +330,10 @@ Settings, profiles, and the session are stored per user in
 | Esc | Cancel crop / close dialogs / back to windowed |
 | Ctrl (held while dragging) | Snap to grid |
 | Shift (held while dragging the picture) | Move the picture inside the tile |
+| Alt+drag | Move touching tiles as one group |
+| Alt+resize | Touching tiles resize together |
 | Alt+scroll | Rotate the video under the cursor |
+| Double-click | Reset zoom and pan (fitted view) |
 
 ---
 

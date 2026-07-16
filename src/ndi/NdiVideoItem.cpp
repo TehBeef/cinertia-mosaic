@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <QTransform>
 #include <QWheelEvent>
+#include <QtMath>
 
 #include <Processing.NDI.Lib.h>
 
@@ -518,14 +519,36 @@ QRectF NdiVideoItem::fitRect() const
     return QRectF((width() - w) / 2, (height() - h) / 2, w, h);
 }
 
+qreal NdiVideoItem::rotationFitScale() const
+{
+    // fitRect() letterboxes the (cropped) content with no rotation; once
+    // the quad turns about the tile center its bounding box changes shape.
+    // This factor rescales that rotated bounding box to fit the tile, so
+    // "zoom 1 = the picture fits" stays true at any rotation (it is exactly
+    // 1 at 0°/180°). Recomputed from the live geometry on every use, which
+    // is what keeps a rotated picture fitting while the tile is resized.
+    const QRectF fit = fitRect();
+    if (fit.isEmpty() || width() <= 0 || height() <= 0)
+        return 1.0;
+    const qreal rad = qDegreesToRadians(m_rotation);
+    const qreal c = qAbs(qCos(rad));
+    const qreal s = qAbs(qSin(rad));
+    const qreal bw = fit.width() * c + fit.height() * s;
+    const qreal bh = fit.width() * s + fit.height() * c;
+    if (bw <= 0 || bh <= 0)
+        return 1.0;
+    return qMin(width() / bw, height() / bh);
+}
+
 QTransform NdiVideoItem::viewTransform() const
 {
     // Must mirror the QMatrix4x4 built in updatePaintNode.
     const QPointF c(width() / 2, height() / 2);
+    const qreal z = m_zoom * rotationFitScale();
     QTransform t;
     t.translate(m_pan.x() + c.x(), m_pan.y() + c.y());
     t.rotate(m_rotation);
-    t.scale(m_zoom, m_zoom);
+    t.scale(z, z);
     t.translate(-c.x(), -c.y());
     return t;
 }
@@ -541,10 +564,11 @@ void NdiVideoItem::setZoomAt(qreal newZoom, const QPointF &anchor)
     m_zoom = newZoom;
 
     const QPointF c(width() / 2, height() / 2);
+    const qreal z = m_zoom * rotationFitScale();
     QTransform noPan;
     noPan.translate(c.x(), c.y());
     noPan.rotate(m_rotation);
-    noPan.scale(m_zoom, m_zoom);
+    noPan.scale(z, z);
     noPan.translate(-c.x(), -c.y());
     m_pan = anchor - noPan.map(base);
 }
@@ -820,10 +844,11 @@ QSGNode *NdiVideoItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 
     // Zoom/pan/rotate = one matrix on the quad; the GPU does the rest.
     const QPointF c(width() / 2, height() / 2);
+    const float z = float(m_zoom * rotationFitScale());
     QMatrix4x4 m;
     m.translate(float(m_pan.x() + c.x()), float(m_pan.y() + c.y()));
     m.rotate(float(m_rotation), 0, 0, 1);
-    m.scale(float(m_zoom));
+    m.scale(z);
     m.translate(float(-c.x()), float(-c.y()));
     root->setMatrix(m);
 

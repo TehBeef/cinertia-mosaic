@@ -15,6 +15,8 @@ Item {
     property bool wheelRotate: true
     property bool sizeOpen: false
     property bool optsOpen: false
+    // ☰ menu on narrow tiles (see compactHeader).
+    property bool menuOpen: false
     // True only when this tile is the TOPMOST one under the cursor (set
     // by the canvas). With overlapping tiles — e.g. duplicates of one
     // source — only the tile that would receive the click shows its
@@ -84,6 +86,48 @@ Item {
     function closePopups() {
         optsOpen = false
         sizeOpen = false
+        menuOpen = false
+    }
+
+    // When the header is too narrow for the full button row (plus some
+    // room for the name), it collapses to ☰ + ✕ and the ☰ menu offers
+    // every action instead. The full row stays laid out (transparent and
+    // inert) purely so its true width can be measured here.
+    readonly property bool compactHeader: controls.width + 90 > width
+    onCompactHeaderChanged: menuOpen = false
+
+    // Header actions, shared by the button row and the ☰ menu so the two
+    // can never behave differently.
+    function uncropAction() {
+        cropMode = false
+        video.clearCrop()
+    }
+    function fitAction() {
+        cropMode = false
+        if (!video.cropped) {
+            // Uncropped: shape the tile to the rotated picture's outline
+            // so it fills the frame with no black bars — but always INSIDE
+            // the tile's current footprint, so Fit never grows the tile
+            // off screen (a 90°-turned source gets a narrower tile, not a
+            // taller one). Cropped tiles keep their current size and shape
+            // (Max's spec).
+            const vs = video.videoSize
+            if (vs.width > 0 && vs.height > 0) {
+                const rad = video.viewRotation * Math.PI / 180
+                const c = Math.abs(Math.cos(rad))
+                const s = Math.abs(Math.sin(rad))
+                const bw = vs.width * c + vs.height * s
+                const bh = vs.width * s + vs.height * c
+                const k = Math.min(tile.width / bw, tile.height / bh)
+                tile.width = Math.max(tile.minW, Math.round(bw * k))
+                tile.height = Math.max(tile.minH, Math.round(bh * k))
+            }
+        }
+        video.resetZoomPan()
+    }
+    function resetAction() {
+        cropMode = false
+        video.resetView()
     }
 
     readonly property int minW: 160
@@ -295,7 +339,7 @@ Item {
             anchors.margins: 1
             height: 28
             color: "#1a1a1ee6"
-            opacity: (tile.hoverTop || moveArea.pressed || tile.sizeOpen || tile.optsOpen) ? 1 : 0
+            opacity: (tile.hoverTop || moveArea.pressed || tile.sizeOpen || tile.optsOpen || tile.menuOpen) ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
 
@@ -310,7 +354,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: 8
-                width: parent.width - controls.width - 24
+                width: parent.width
+                    - (tile.compactHeader ? compactControls.width : controls.width) - 24
                 text: tile.displayName
                 color: "#d8d8dc"
                 font.pixelSize: 11
@@ -325,6 +370,10 @@ Item {
                 // above the header and would otherwise swallow ✕ clicks.
                 anchors.rightMargin: 18
                 spacing: 2
+                // On narrow tiles the row is hidden but stays laid out so
+                // compactHeader can measure the width it would need.
+                opacity: tile.compactHeader ? 0 : 1
+                enabled: !tile.compactHeader
 
                 TileBtn { label: "⟲"; fontSize: 15; onActivated: video.rotateBy(-90) }
                 TileBtn { label: "⟳"; fontSize: 15; onActivated: video.rotateBy(90) }
@@ -338,34 +387,19 @@ Item {
                     // a crop is active; Fit no longer touches the crop.
                     label: "Uncrop"
                     visible: video.cropped
-                    onActivated: {
-                        tile.cropMode = false
-                        video.clearCrop()
-                    }
+                    onActivated: tile.uncropAction()
                 }
                 TileBtn {
+                    // Fit keeps the rotation and the crop — it only makes
+                    // the picture, as currently turned, fit the tile.
                     label: "Fit"
-                    onActivated: {
-                        tile.cropMode = false
-                        if (video.cropped) {
-                            // Cropped: refit the cropped region inside the
-                            // tile as it is — keep the crop AND the tile's
-                            // current size and shape (Max's spec).
-                            video.rotateBy(-video.viewRotation)
-                            video.resetZoomPan()
-                        } else {
-                            // Uncropped: reset the view AND shape the tile
-                            // to the video so the picture fills the frame
-                            // with no black bars.
-                            video.resetView()
-                            const vs = video.videoSize
-                            if (vs.width > 0 && vs.height > 0) {
-                                const nh = Math.max(tile.minH,
-                                    Math.round(tile.width * vs.height / vs.width))
-                                tile.height = nh
-                            }
-                        }
-                    }
+                    onActivated: tile.fitAction()
+                }
+                TileBtn {
+                    // Full view reset: crop, rotation, zoom and pan all go
+                    // back to the plain source. Tile size is untouched.
+                    label: "Reset"
+                    onActivated: tile.resetAction()
                 }
                 TileBtn {
                     label: "Size"
@@ -386,13 +420,38 @@ Item {
                 }
                 TileBtn { label: "✕"; fontSize: 14; onActivated: tile.closeRequested() }
             }
+
+            // Narrow tiles: the full row does not fit, so the header shows
+            // ☰ (every action, as a menu) and ✕ only.
+            Row {
+                id: compactControls
+                visible: tile.compactHeader
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right
+                anchors.rightMargin: 18
+                spacing: 2
+
+                TileBtn {
+                    label: "☰"
+                    fontSize: 13
+                    active: tile.menuOpen
+                    onActivated: {
+                        tile.menuOpen = !tile.menuOpen
+                        tile.sizeOpen = false
+                        tile.optsOpen = false
+                    }
+                }
+                TileBtn { label: "✕"; fontSize: 14; onActivated: tile.closeRequested() }
+            }
         }
 
         // Custom tile size entry (opens from the Size button).
         component NumBox: Rectangle {
             property alias text: input.text
             property int value: 0
-            width: 56
+            // Shrinks on narrow tiles so the whole size panel stays inside
+            // the tile (which clips its children).
+            width: Math.max(36, Math.min(56, (tile.width - 88) / 2))
             height: 22
             radius: 2
             color: "#101013"
@@ -425,6 +484,13 @@ Item {
             border.width: 1
             border.color: "#2a2a2e"
 
+            // Swallow stray presses AND wheel — scrolling here must not
+            // zoom the video underneath.
+            MouseArea {
+                anchors.fill: parent
+                onWheel: wheel => wheel.accepted = true
+            }
+
             Row {
                 id: sizeRow
                 anchors.centerIn: parent
@@ -455,14 +521,21 @@ Item {
             anchors.top: header.bottom
             anchors.right: parent.right
             anchors.margins: 4
-            width: 190
+            // Never wider than the tile — the tile clips its children, so
+            // a fixed width would lose the panel's left edge on narrow tiles.
+            width: Math.min(190, parent.width - 8)
             height: optsCol.height + 16
             radius: 3
             color: "#1a1a1e"
             border.width: 1
             border.color: "#2a2a2e"
 
-            MouseArea { anchors.fill: parent } // swallow stray presses
+            // Swallow stray presses AND wheel — scrolling here must not
+            // zoom the video underneath.
+            MouseArea {
+                anchors.fill: parent
+                onWheel: wheel => wheel.accepted = true
+            }
 
             component OptCheck: Item {
                 property string label
@@ -614,6 +687,134 @@ Item {
                         }
                     }
                 }
+            }
+        }
+
+        // Consolidated ☰ menu for narrow tiles: every header action as a
+        // dropdown list (opens from the ☰ button, see compactHeader).
+        Rectangle {
+            visible: tile.menuOpen
+            anchors.top: header.bottom
+            anchors.right: parent.right
+            anchors.margins: 4
+            width: 110
+            // On short tiles the full list would be clipped by the tile,
+            // so the panel caps its height to the space below the header
+            // and the list scrolls instead.
+            height: Math.min(menuCol.height + 12, parent.height - 40)
+            radius: 3
+            color: "#1a1a1e"
+            border.width: 1
+            border.color: "#2a2a2e"
+
+            // Swallow stray presses AND wheel — scrolling the menu must
+            // not zoom the video underneath.
+            MouseArea {
+                anchors.fill: parent
+                onWheel: wheel => wheel.accepted = true
+            }
+
+            component MenuRow: Rectangle {
+                property string label
+                property bool active: false
+                signal activated()
+                width: menuCol.width
+                height: 22
+                radius: 2
+                color: active ? "#22303e"
+                     : rowHover.hovered ? "#2a2a30" : "transparent"
+                border.width: active ? 1 : 0
+                border.color: "#3d7eff"
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: 6
+                    text: parent.label
+                    color: "#d8d8dc"
+                    font.pixelSize: 12
+                }
+                HoverHandler { id: rowHover }
+                TapHandler {
+                    gesturePolicy: TapHandler.ReleaseWithinBounds
+                    onTapped: parent.activated()
+                }
+            }
+
+            Flickable {
+                id: menuFlick
+                anchors.fill: parent
+                anchors.margins: 6
+                contentWidth: width
+                contentHeight: menuCol.height
+                clip: true
+
+            Column {
+                id: menuCol
+                width: menuFlick.width
+                spacing: 2
+
+                // Rotation stays open — turning twice is common.
+                MenuRow { label: "Rotate ⟲"; onActivated: video.rotateBy(-90) }
+                MenuRow { label: "Rotate ⟳"; onActivated: video.rotateBy(90) }
+                MenuRow {
+                    label: "Crop"
+                    active: tile.cropMode
+                    onActivated: {
+                        tile.cropMode = !tile.cropMode
+                        tile.menuOpen = false
+                    }
+                }
+                MenuRow {
+                    label: "Uncrop"
+                    visible: video.cropped
+                    onActivated: {
+                        tile.uncropAction()
+                        tile.menuOpen = false
+                    }
+                }
+                MenuRow {
+                    label: "Fit"
+                    onActivated: {
+                        tile.fitAction()
+                        tile.menuOpen = false
+                    }
+                }
+                MenuRow {
+                    label: "Reset"
+                    onActivated: {
+                        tile.resetAction()
+                        tile.menuOpen = false
+                    }
+                }
+                MenuRow {
+                    label: "Size…"
+                    onActivated: {
+                        tile.menuOpen = false
+                        tile.sizeOpen = true
+                    }
+                }
+                MenuRow {
+                    label: "Options…"
+                    onActivated: {
+                        tile.menuOpen = false
+                        tile.optsOpen = true
+                    }
+                }
+            }
+            }
+
+            // Slim gray scroll indicator, same style as the settings panel
+            // (the native control style does not allow restyling ScrollBar).
+            Rectangle {
+                visible: menuFlick.visibleArea.heightRatio < 1
+                anchors.right: parent.right
+                anchors.rightMargin: 2
+                y: 6 + menuFlick.visibleArea.yPosition * menuFlick.height
+                height: menuFlick.visibleArea.heightRatio * menuFlick.height
+                width: 4
+                radius: 2
+                color: "#3a3a40"
             }
         }
 

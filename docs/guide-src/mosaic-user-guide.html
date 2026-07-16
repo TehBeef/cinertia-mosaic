@@ -116,7 +116,7 @@
     <div class="cover">
         <img src="../../resources/mosaic-logo.png" alt="Mosaic logo">
         <div>
-            <div class="title">Mosaic <span class="badge">v0.5.5</span></div>
+            <div class="title">Mosaic <span class="badge">v0.6.0</span></div>
             <div class="subtitle">Professional NDI® Multiviewer &nbsp;·&nbsp; User Guide &nbsp;·&nbsp; Cinertia Systems</div>
         </div>
     </div>
@@ -128,7 +128,7 @@
     <h3>Windows</h3>
     <div class="card">
         <ol>
-            <li>Run <code>Mosaic-Setup-0.5.5.exe</code> on 64-bit Windows 10 or 11 and follow the wizard. Everything Mosaic needs is included — there is nothing else to install.</li>
+            <li>Run <code>Mosaic-Setup-0.6.0.exe</code> on 64-bit Windows 10 or 11 and follow the wizard. Everything Mosaic needs is included — there is nothing else to install.</li>
             <li>Launch <strong>Mosaic</strong> from the Start Menu (or the optional desktop icon).</li>
             <li>The first time Mosaic runs, <strong>Windows Firewall</strong> will ask for network access — click <strong>Allow</strong>. NDI® discovery and video need it.</li>
         </ol>
@@ -136,7 +136,7 @@
     <h3>macOS</h3>
     <div class="card">
         <ol>
-            <li>Open <code>Mosaic-0.5.5.dmg</code> and drag <strong>Mosaic</strong> into the <strong>Applications</strong> folder shortcut beside it. Apple Silicon and Intel Macs are both supported (macOS 12 or newer).</li>
+            <li>Open <code>Mosaic-0.6.0.dmg</code> and drag <strong>Mosaic</strong> into the <strong>Applications</strong> folder shortcut beside it. Apple Silicon and Intel Macs are both supported (macOS 12 or newer).</li>
             <li>First launch: <strong>right-click Mosaic.app → Open → Open</strong>. A plain double-click is blocked the first time because this build is not notarized with Apple; right-click → Open is only needed once.</li>
             <li>When macOS asks <strong>"Allow Mosaic to find devices on local networks?" click Allow</strong> — NDI® discovery needs it. If missed, enable it later under System Settings → Privacy &amp; Security → Local Network.</li>
         </ol>
@@ -163,7 +163,8 @@
 
     <h2>Working with tiles</h2>
     <p>Hover a tile to reveal its header:
-        <span class="btnrow"><b>⟲ ⟳</b> rotate 90° · <b>Crop</b> drag-select a region · <b>Uncrop</b> remove the crop (shown only while cropped) · <b>Fit</b> reset the view · <b>Size</b> exact pixel dimensions · <b>⋯</b> options · <b>✕</b> close</span></p>
+        <span class="btnrow"><b>⟲ ⟳</b> rotate 90° · <b>Crop</b> drag-select a region · <b>Uncrop</b> remove the crop (shown only while cropped) · <b>Fit</b> fit the picture · <b>Reset</b> undo crop/rotation/zoom · <b>Size</b> exact pixel dimensions · <b>⋯</b> options · <b>✕</b> close</span>
+        On a tile too narrow for all buttons, the header collapses to <b>☰</b> and <b>✕</b> — the ☰ menu offers every action and scrolls on short tiles.</p>
     <table>
         <tr><th>To do this</th><th>Do this</th></tr>
         <tr><td>Select a tile</td><td>Click it — blue border, comes to the front. The border fades when idle; nudge the mouse to see it again</td></tr>
@@ -178,7 +179,8 @@
         <tr><td>Stream status</td><td>A red dot appears top-left when a tile loses its live connection to the source (sender closed or off the network). No dot = connected, including static pictures (Settings toggle)</td></tr>
         <tr><td>Move touching tiles together</td><td><kbd>Alt</kbd>+drag a tile — every tile touching it moves as one group</td></tr>
         <tr><td>Resize touching tiles together</td><td><kbd>Alt</kbd>+drag an edge — a shared border moves for every tile on it; an outer edge moves the group's matching edges to the same line</td></tr>
-        <tr><td>Reset the view</td><td>Double-click (zoom/pan) or header → <strong>Fit</strong>. Uncropped: resets the view and reshapes the tile to the video. Cropped: keeps the crop and the tile's size, refitting the cropped region inside the tile</td></tr>
+        <tr><td>Fit the picture</td><td>Header → <strong>Fit</strong> — fits the picture at its current rotation (rotation and crop are kept). Uncropped: also reshapes the tile to the rotated picture's outline, within the tile's footprint. Cropped: keeps the tile's size and shape. A fitted rotated picture stays fitted while the tile is resized</td></tr>
+        <tr><td>Reset the view</td><td>Header → <strong>Reset</strong> undoes crop, rotation, zoom and pan in one click (tile size untouched). Double-click resets zoom/pan only</td></tr>
     </table>
 
     <img class="fig w60" src="img/fig-crop.png" alt="Crop selection">
@@ -250,8 +252,10 @@
         <tr><td>Auto low bandwidth for small tiles</td><td>On (default): small tiles automatically receive the lighter NDI® proxy stream — big CPU/network savings on dense grids</td></tr>
         <tr><td>Keep canvases when switching profiles</td><td>On (default): canvases not saved in the selected profile stay open unchanged. Off: they close</td></tr>
         <tr><td>Keep display awake</td><td>Stops Windows from blanking the screen — for unattended operation</td></tr>
+        <tr><td>Check for updates at startup</td><td>On (default): asks GitHub once at startup whether a newer release exists; if so, an "Update available" line appears in the sidebar and About dialog. Nothing installs automatically</td></tr>
         <tr><td>TCP remote control + port</td><td>The Stream Deck / Companion interface (default port 9955)</td></tr>
         <tr><td>Tile spacing</td><td>Gap used by layout buttons, 0–64 px. 0 = seamless video wall</td></tr>
+        <tr><td>Shortcuts…</td><td>Every keyboard and mouse shortcut, grouped by where it applies</td></tr>
     </table>
         </div>
         <div style="flex: 0 0 34mm;">
@@ -261,6 +265,7 @@
     </div>
 
     <h2>Hotkeys</h2>
+    <p>The full list is always available in the app under <strong>Settings → Shortcuts…</strong>, grouped by where each shortcut applies.</p>
     <table>
         <tr><th>Key</th><th>Action</th></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>9</kbd></td><td>Switch to profile 1–9 (sidebar order)</td></tr>
@@ -268,7 +273,10 @@
         <tr><td><kbd>Esc</kbd></td><td>Cancel crop / close dialogs, then return to windowed</td></tr>
         <tr><td><kbd>Ctrl</kbd> (held while dragging)</td><td>Snap tiles to the grid</td></tr>
         <tr><td><kbd>Shift</kbd> (held while dragging the picture)</td><td>Move the picture inside the tile</td></tr>
+        <tr><td><kbd>Alt</kbd>+drag</td><td>Move touching tiles as one group</td></tr>
+        <tr><td><kbd>Alt</kbd>+resize</td><td>Touching tiles resize together</td></tr>
         <tr><td><kbd>Alt</kbd>+scroll</td><td>Rotate the video in a tile</td></tr>
+        <tr><td>Double-click</td><td>Reset zoom and pan (fitted view)</td></tr>
     </table>
 
     <h2>Stream Deck &amp; Bitfocus Companion</h2>
@@ -294,6 +302,15 @@
     </ul>
 
     <h2>What's new</h2>
+    <h3>0.6.0 — July 2026</h3>
+    <ul>
+        <li><strong>Fit respects rotation:</strong> Fit fits the picture at its current angle, reshaping an uncropped tile to the rotated outline within its footprint. Rotated pictures stay fitted while the tile is resized, and rotating keeps the picture inside the tile.</li>
+        <li><strong>Reset button:</strong> one click in the tile header undoes crop, rotation, zoom and pan.</li>
+        <li><strong>Compact tile header:</strong> narrow tiles collapse the button row into a ☰ menu with every action; tile panels fit narrow tiles and scrolling over them no longer zooms the video.</li>
+        <li><strong>Update notice (new setting, on by default):</strong> Mosaic checks GitHub once at startup and shows a quiet "Update available — Download" line in the sidebar and About dialog when a newer release exists. Nothing installs automatically.</li>
+        <li><strong>Shortcuts dialog:</strong> every keyboard and mouse shortcut, grouped and readable, under Settings → Shortcuts…</li>
+        <li><strong>About dialog:</strong> GitHub project link added; NDI® notices grouped at the bottom.</li>
+    </ul>
     <h3>0.5.5 — July 2026</h3>
     <ul>
         <li><strong>Stream status indicators</strong> (new setting, on by default): a red dot on tiles that have lost their live connection to the source (sender closed or gone from the network); static pictures stay dotless.</li>
@@ -335,7 +352,7 @@
 
     <div class="footer">
         <strong style="color:#8a8a90">Support:</strong> max@cinertia.systems &nbsp;·&nbsp; Cinertia.Systems<br>
-        Mosaic v0.5.5 — © 2026 Cinertia Systems. NDI® is a registered trademark of Vizrt NDI AB.
+        Mosaic v0.6.0 — © 2026 Cinertia Systems. NDI® is a registered trademark of Vizrt NDI AB.
     </div>
 
 </div>

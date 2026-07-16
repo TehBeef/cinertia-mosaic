@@ -12,7 +12,26 @@ approval from the NDI team, so everything internal uses this codename for now.
 Easy to rename later.
 
 ## Current status
-**Current release: 0.5.5 — show-day usability, signed off on macOS.**
+**Current release: 0.6.0 — viewing polish and update notices.**
+Fit now respects rotation: it fits the picture at its current angle,
+reshaping an uncropped tile to the rotated outline within the tile's
+footprint. The fit factor lives in the render transform
+(`rotationFitScale()` in `src/ndi/NdiVideoItem.cpp`), so "default zoom"
+always means "the rotated picture fits" and tile resizes keep rotated
+pictures fitted automatically. A Reset header button undoes
+crop/rotation/zoom/pan; narrow tiles collapse their header into a
+scrollable ☰ menu; tile panels shrink to narrow tiles and swallow
+wheel events; a notify-only update checker (`src/UpdateChecker.cpp`,
+"Check for updates at startup" setting) shows an "Update available —
+Download" line in the sidebar footer and About dialog when GitHub has
+a newer release — nothing installs itself; a Shortcuts dialog
+(Settings → Shortcuts…) replaces the tips paragraph; and the About
+dialog gained a GitHub link with the NDI® notices grouped at the
+bottom. Windows installer, guide PDF and Companion module are on the
+v0.6.0 GitHub release; the macOS dmg gets attached from the Mac, which
+then marks v0.6.0 as latest.
+
+**Previous release: 0.5.5 — show-day usability, signed off on macOS.**
 Stream status indicator dots (a red dot appears when a tile loses its
 live connection to the source — sender closed or gone from the network;
 static pictures such as stills and test patterns stay dotless because
@@ -33,11 +52,8 @@ scrolls in a small window.
 
 The connection-based status dot replaced the original motion-based
 detection, which wrongly flagged legitimately static pictures as down —
-a fix made during Mac testing. It lives in shared code
-(`src/ndi/NdiVideoItem.cpp`), so the `Mosaic-Setup-0.5.5.exe` already on
-the release predates it: rebuild the Windows installer on the PC (pull
-master, run `scripts/stage-deploy.ps1`, re-upload the exe with
-`--clobber`) so both platforms match.
+a fix made during Mac testing; both platforms' 0.5.5 installers carry
+it.
 
 **Previous release: 0.5.0 — the performance release, complete on both
 platforms.** GPU pixel-format conversion, auto proxy for small tiles,

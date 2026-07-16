@@ -17,6 +17,15 @@ ApplicationWindow {
     PowerGuard { keepAwake: window.neverSleep }
     // Hides the mouse over Mosaic's windows after 3 s of no movement.
     CursorGuard { id: cursorGuard; enabled: window.hideCursor }
+    // Asks GitHub once, a moment after startup, whether a newer release
+    // exists. Notify-only: the notice appears in Settings and About and
+    // links to the releases page — nothing installs itself (show machines).
+    UpdateChecker { id: updateChecker }
+    Timer {
+        interval: 3000
+        running: window.checkUpdates
+        onTriggered: updateChecker.check()
+    }
 
     RemoteControl {
         id: remote
@@ -100,6 +109,8 @@ ApplicationWindow {
     property bool statusDots: true
     // Hide the mouse cursor over the app after a few idle seconds.
     property bool hideCursor: true
+    // Check GitHub for a newer release at startup (notify-only).
+    property bool checkUpdates: true
     // Off (default): sidebar clicks toggle a source on/off the canvas.
     // On: every click adds another tile of the source, so one shot can be
     // cropped to several regions.
@@ -236,12 +247,17 @@ ApplicationWindow {
     }
 
     property bool aboutOpen: false
+    property bool shortcutsOpen: false
 
     // Esc: first close dialogs / cancel crops; otherwise return to windowed.
     function escapePressed() {
         let cancelled = false
         if (aboutOpen) {
             aboutOpen = false
+            cancelled = true
+        }
+        if (shortcutsOpen) {
+            shortcutsOpen = false
             cancelled = true
         }
         if (canvas.cancelOverlays())
@@ -446,6 +462,7 @@ ApplicationWindow {
             autoLowBw: autoLowBw,
             statusDots: statusDots,
             hideCursor: hideCursor,
+            checkUpdates: checkUpdates,
             neverSleep: neverSleep,
             keepCanvases: keepCanvases,
             remoteEnabled: remoteEnabled,
@@ -477,6 +494,7 @@ ApplicationWindow {
                 autoLowBw = s.autoLowBw !== false
                 statusDots = s.statusDots !== false
                 hideCursor = s.hideCursor !== false
+                checkUpdates = s.checkUpdates !== false
                 neverSleep = s.neverSleep === true
                 keepCanvases = s.keepCanvases !== false
                 remoteEnabled = s.remoteEnabled === true
@@ -874,6 +892,32 @@ ApplicationWindow {
                     width: parent.width
                     spacing: 4
 
+                    // Update notice: always on screen in the main window,
+                    // so no menu needs opening to learn a release is out.
+                    Row {
+                        visible: updateChecker.updateAvailable
+                        spacing: 6
+
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 7
+                            height: 7
+                            radius: 3.5
+                            color: "#3d7eff"
+                        }
+                        Text {
+                            text: "Update available — <a href='"
+                                + updateChecker.releaseUrl
+                                + "' style='color:#3d7eff;text-decoration:none;'>Download "
+                                + updateChecker.latestVersion + "</a>"
+                            color: "#d8d8dc"
+                            linkColor: "#3d7eff"
+                            font.pixelSize: 11
+                            textFormat: Text.RichText
+                            onLinkActivated: link => Qt.openUrlExternally(link)
+                        }
+                    }
+
                     Text {
                         text: "Learn more at <a href='https://ndi.video/'>ndi.video</a>"
                         color: "#8a8a90"
@@ -1231,6 +1275,11 @@ ApplicationWindow {
                 checked: window.neverSleep
                 onToggled: window.neverSleep = !window.neverSleep
             }
+            CheckRow {
+                label: "Check for updates at startup"
+                checked: window.checkUpdates
+                onToggled: window.checkUpdates = !window.checkUpdates
+            }
 
             Text {
                 text: "REMOTE CONTROL (COMPANION / STREAM DECK)"
@@ -1295,20 +1344,23 @@ ApplicationWindow {
                 }
             }
 
-            ToolBtn {
-                label: "About Mosaic…"
-                onActivated: {
-                    window.settingsOpen = false
-                    window.aboutOpen = true
-                }
-            }
+            Row {
+                spacing: 6
 
-            Text {
-                width: parent.width
-                text: "Scroll = zoom · Drag = move tile (pans when zoomed in) · Shift+drag = move picture · Alt+drag = move touching tiles together · Alt+resize = shared borders move together · Alt+scroll = rotate · Edges/corners = resize · Ctrl = snap · Esc = windowed · F11 = fullscreen · Ctrl+1–9 = profiles"
-                color: "#5a5a60"
-                font.pixelSize: 10
-                wrapMode: Text.WordWrap
+                ToolBtn {
+                    label: "Shortcuts…"
+                    onActivated: {
+                        window.settingsOpen = false
+                        window.shortcutsOpen = true
+                    }
+                }
+                ToolBtn {
+                    label: "About Mosaic…"
+                    onActivated: {
+                        window.settingsOpen = false
+                        window.aboutOpen = true
+                    }
+                }
             }
         }
         }
@@ -1365,9 +1417,32 @@ ApplicationWindow {
                     font.weight: Font.DemiBold
                 }
                 Text {
-                    text: "Version 0.5.5 — Cinertia Systems"
+                    text: "Version 0.6.0 — Cinertia Systems"
                     color: "#8a8a90"
                     font.pixelSize: 12
+                }
+                Row {
+                    visible: updateChecker.updateAvailable
+                    spacing: 6
+
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 7
+                        height: 7
+                        radius: 3.5
+                        color: "#3d7eff"
+                    }
+                    Text {
+                        text: "Update available — <a href='"
+                            + updateChecker.releaseUrl
+                            + "' style='color:#3d7eff;text-decoration:none;'>Download "
+                            + updateChecker.latestVersion + "</a>"
+                        color: "#d8d8dc"
+                        linkColor: "#3d7eff"
+                        font.pixelSize: 11
+                        textFormat: Text.RichText
+                        onLinkActivated: link => Qt.openUrlExternally(link)
+                    }
                 }
                 Text {
                     width: parent.width
@@ -1375,21 +1450,6 @@ ApplicationWindow {
                     color: "#d8d8dc"
                     font.pixelSize: 12
                     wrapMode: Text.WordWrap
-                }
-                Text {
-                    width: parent.width
-                    text: "NDI® is a registered trademark of Vizrt NDI AB."
-                    color: "#8a8a90"
-                    font.pixelSize: 11
-                    wrapMode: Text.WordWrap
-                }
-                Text {
-                    text: "Learn more at <a href='https://ndi.video/'>ndi.video</a>"
-                    color: "#8a8a90"
-                    linkColor: "#3d7eff"
-                    font.pixelSize: 11
-                    textFormat: Text.RichText
-                    onLinkActivated: link => Qt.openUrlExternally(link)
                 }
                 Text {
                     text: "Support: <a href='mailto:max@cinertia.systems'>max@cinertia.systems</a>"
@@ -1407,11 +1467,160 @@ ApplicationWindow {
                     textFormat: Text.RichText
                     onLinkActivated: link => Qt.openUrlExternally(link)
                 }
+                Text {
+                    text: "Downloads and release notes: <a href='https://github.com/MaxDeRoin/cinertia-mosaic'>GitHub</a>"
+                    color: "#8a8a90"
+                    linkColor: "#3d7eff"
+                    font.pixelSize: 11
+                    textFormat: Text.RichText
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+                }
+                Text {
+                    width: parent.width
+                    text: "NDI® is a registered trademark of Vizrt NDI AB."
+                    color: "#8a8a90"
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    text: "Learn more at <a href='https://ndi.video/'>ndi.video</a>"
+                    color: "#8a8a90"
+                    linkColor: "#3d7eff"
+                    font.pixelSize: 11
+                    textFormat: Text.RichText
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+                }
                 Item { width: 1; height: 4 }
                 ToolBtn {
                     label: "Close"
                     anchors.right: parent.right
                     onActivated: window.aboutOpen = false
+                }
+            }
+        }
+    }
+
+    // --------------------------------------------------- shortcuts dialog
+    Rectangle {
+        anchors.fill: parent
+        visible: window.shortcutsOpen
+        z: 300
+        color: "#000000a0"
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: window.shortcutsOpen = false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: 480
+            height: shortcutsCol.height + 40
+            radius: 6
+            color: "#1a1a1e"
+            border.width: 1
+            border.color: "#2a2a2e"
+
+            MouseArea { anchors.fill: parent } // keep clicks inside
+
+            // One shortcut line: key chip on the left, action text right.
+            component KeyRow: Row {
+                property string keys
+                property string action
+                spacing: 8
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: keyText.width + 12
+                    height: 18
+                    radius: 3
+                    color: "#101013"
+                    border.width: 1
+                    border.color: "#2a2a2e"
+
+                    Text {
+                        id: keyText
+                        anchors.centerIn: parent
+                        text: parent.parent.keys
+                        color: "#d8d8dc"
+                        font.pixelSize: 10
+                    }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: parent.action
+                    color: "#8a8a90"
+                    font.pixelSize: 11
+                }
+            }
+            component GroupTitle: Text {
+                color: "#5a5a60"
+                font.pixelSize: 9
+                font.letterSpacing: 0.5
+            }
+
+            Column {
+                id: shortcutsCol
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: 20
+                spacing: 10
+
+                Text {
+                    text: "Shortcuts"
+                    color: "#e8e8ea"
+                    font.pixelSize: 18
+                    font.weight: Font.DemiBold
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 24
+
+                    Column {
+                        width: (parent.width - 24) / 2
+                        spacing: 5
+
+                        GroupTitle { text: "INSIDE A TILE" }
+                        KeyRow { keys: "Scroll"; action: "Zoom toward the cursor" }
+                        KeyRow { keys: "Drag"; action: "Pan when zoomed in" }
+                        KeyRow { keys: "Shift+drag"; action: "Move the picture" }
+                        KeyRow { keys: "Alt+scroll"; action: "Rotate in fine steps" }
+                        KeyRow { keys: "Double-click"; action: "Reset zoom and pan" }
+                        KeyRow { keys: "Esc"; action: "Cancel a crop" }
+
+                        Item { width: 1; height: 6 }
+                        GroupTitle { text: "DISPLAY AND PROFILES" }
+                        KeyRow { keys: "F11"; action: "Fullscreen" }
+                        KeyRow { keys: "Esc"; action: "Back to windowed" }
+                        KeyRow { keys: "Ctrl+1–9"; action: "Switch profiles" }
+                    }
+
+                    Column {
+                        width: (parent.width - 24) / 2
+                        spacing: 5
+
+                        GroupTitle { text: "ON THE CANVAS" }
+                        KeyRow { keys: "Drag"; action: "Move a tile" }
+                        KeyRow { keys: "Edges/corners"; action: "Resize a tile" }
+                        KeyRow { keys: "Ctrl+drag"; action: "Snap to the grid" }
+                        KeyRow { keys: "Alt+drag"; action: "Move touching tiles" }
+                        KeyRow { keys: "Alt+resize"; action: "Resize touching tiles" }
+
+                        Item { width: 1; height: 6 }
+                        GroupTitle { text: "TILE HEADER" }
+                        KeyRow { keys: "⟲ ⟳"; action: "Rotate 90°" }
+                        KeyRow { keys: "Fit"; action: "Fit the picture" }
+                        KeyRow { keys: "Reset"; action: "Undo crop, rotation, zoom" }
+                    }
+                }
+
+                Item { width: 1; height: 4 }
+                ToolBtn {
+                    label: "Close"
+                    anchors.right: parent.right
+                    onActivated: window.shortcutsOpen = false
                 }
             }
         }

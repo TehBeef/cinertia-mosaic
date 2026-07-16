@@ -6,6 +6,46 @@ Vizrt NDI AB.
 
 ---
 
+## 0.6.0 — 2026-07-16
+
+### Viewing
+- **Fit respects rotation:** Fit now fits the picture at its current
+  angle instead of undoing the rotation. On an uncropped tile it also
+  reshapes the tile to the rotated picture's outline, always within the
+  tile's current footprint — a 90°-turned source gets a narrower tile,
+  never a larger one. Cropped tiles keep their size and shape.
+- **Rotated tiles stay fitted:** resizing a tile re-fits a rotated
+  picture continuously, and rotating keeps the picture inside the tile
+  — the same behavior unrotated tiles have always had.
+- **Reset button** in the tile header: one click undoes crop, rotation,
+  zoom and pan, returning the tile to the plain source. Tile size is
+  untouched.
+
+### Interface
+- **Compact tile header:** when a tile is too narrow to fit all header
+  buttons, the header collapses to ☰ and ✕ — the ☰ menu offers every
+  action (rotate, crop, fit, reset, size, options) and scrolls on short
+  tiles instead of being cut off.
+- **Tile panels fit narrow tiles:** the options and size panels shrink
+  to the tile's width, and scrolling over any tile panel no longer
+  zooms the video underneath.
+- **Shortcuts dialog:** every keyboard and mouse shortcut, grouped by
+  where it applies, under Settings → Shortcuts… — replacing the dense
+  tips paragraph at the bottom of the settings panel.
+- **About dialog:** added a link to the GitHub project (downloads and
+  release notes); the NDI® notices are grouped at the bottom.
+
+### Updates
+- **Update notice (new setting, on by default):** Mosaic asks GitHub
+  once at startup whether a newer release exists. If so, a small
+  "Update available — Download" line appears at the bottom of the
+  sidebar and in the About dialog, linking to the release page.
+  Nothing downloads or installs automatically, and the check is
+  silent when offline — updating stays a deliberate act on show
+  machines. Turn it off with Settings → Check for updates at startup.
+
+---
+
 ## 0.5.5 — 2026-07-11
 
 ### Monitoring

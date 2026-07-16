@@ -125,8 +125,11 @@ public:
     qreal audioLeft() const { return m_audioLeft; }
     qreal audioRight() const { return m_audioRight; }
 
+    // Zoom 1 always means "the picture, at its current rotation, fits the
+    // tile" (see rotationFitScale), so Fit and double-click are both just
+    // a zoom/pan reset.
     Q_INVOKABLE void resetView();    // zoom, pan, rotation and crop
-    Q_INVOKABLE void resetZoomPan(); // double-click: keep rotation/crop
+    Q_INVOKABLE void resetZoomPan(); // Fit / double-click: keep rotation/crop
     Q_INVOKABLE void rotateBy(qreal degrees);
     Q_INVOKABLE void applyCropFromItemRect(const QRectF &itemRect);
     Q_INVOKABLE void clearCrop();
@@ -163,7 +166,8 @@ private:
     void onStatus(const QString &status);
     void onHealth(int health);
     void onAudioLevels(qreal left, qreal right);
-    QRectF fitRect() const;          // letterboxed quad at zoom 1
+    QRectF fitRect() const;          // letterboxed quad, unrotated
+    qreal rotationFitScale() const;  // rescales the rotated quad to fit
     QTransform viewTransform() const;
     void setZoomAt(qreal newZoom, const QPointF &anchor);
     void viewUpdated();
